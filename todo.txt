@@ -1,0 +1,28 @@
+Theme colors:
+
+
+PRIMARY
+--Regular Shade
+    Candidates:
+    - #ff9262
+    - WHITE/BLACK
+    - #9df7ff
+    - #ffef87
+
+
+DARK
+--Background
+    Candidates
+    - #181818
+--Text
+    Candidates
+    - rgba(255, 255, 255, 0.87)
+
+
+LIGHT
+--Background
+    Candidates
+    - #d8ffff;
+--Text
+    Candidates
+    - rgba(21, 21, 21, 0.87)
