@@ -10,6 +10,8 @@ import SignonPage from './pages/SignonPage';
 import { LinkButton } from './components/LinkElements';
 import { LinkImage } from './components/LinkElements';
 import PageTransition from './components/PageTransition';
+//Import firebase using firebase.js
+import './firebase';
 
 function App() {
   return (
