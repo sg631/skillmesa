@@ -12,8 +12,23 @@ import { LinkImage } from './components/LinkElements';
 import PageTransition from './components/PageTransition';
 //Import firebase using firebase.js
 import {auth, db} from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { collection, getDocs } from 'firebase/firestore';
 
 function App() {
+  // Check if user is logged in
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log("User is signed in:", user);
+        // Fetch user data from Firestore: todo
+      } else {
+        console.log("No user is signed in.");
+      }
+    }
+    );
+    return () => unsubscribe();
+  }, []);
   return (
     <Router>
       <div>
@@ -21,7 +36,7 @@ function App() {
           {/* Menu Button, left aligned stuff, opens sidebar menu */}
           {/* Logo, right aligned stuff */}
           <LinkImage to="/" src="/assets/logos/skillmesa.svg" width={100} height={100}alt="Skillmesa Logo" />
-          <Link to="/home">home ${firebase}</Link>
+          <Link to="/home">home</Link>
           <Link to="/comingsoon">dashboard</Link>
           <Link to="/comingsoon">explore</Link>
           <Link to="/comingsoon">opportunities</Link>
