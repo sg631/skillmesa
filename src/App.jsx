@@ -26,6 +26,7 @@ function App() {
         console.log("Firebase is active:", !!auth && !!db);
       } else {
         console.log("No user is signed in.");
+        console.log("Firebase is active:", !!auth && !!db);
       }
     }
     );
