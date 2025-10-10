@@ -11,7 +11,7 @@ import { LinkButton } from './components/LinkElements';
 import { LinkImage } from './components/LinkElements';
 import PageTransition from './components/PageTransition';
 //Import firebase using firebase.js
-import './firebase';
+import {auth, db} from './firebase';
 
 function App() {
   return (
@@ -21,7 +21,7 @@ function App() {
           {/* Menu Button, left aligned stuff, opens sidebar menu */}
           {/* Logo, right aligned stuff */}
           <LinkImage to="/" src="/assets/logos/skillmesa.svg" width={100} height={100}alt="Skillmesa Logo" />
-          <Link to="/home">home</Link>
+          <Link to="/home">home ${firebase}</Link>
           <Link to="/comingsoon">dashboard</Link>
           <Link to="/comingsoon">explore</Link>
           <Link to="/comingsoon">opportunities</Link>
