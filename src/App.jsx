@@ -16,18 +16,11 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs } from 'firebase/firestore';
 
 function App() {
+  const [user, setUser] = useState(null);
   // Check if user is logged in
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        console.log("User is signed in:", user);
-        // Fetch user data from Firestore: todo
-        // Log if firebase is active
-        console.log("Firebase is active:", !!auth && !!db);
-      } else {
-        console.log("No user is signed in.");
-        console.log("Firebase is active:", !!auth && !!db);
-      }
+      setUser(user);
     }
     );
     return () => unsubscribe();
@@ -44,7 +37,7 @@ function App() {
           <Link to="/comingsoon">explore</Link>
           <Link to="/comingsoon">opportunities</Link>
           {/* User Profile Icon */}
-          <LinkImage to="/profile" src="/assets/icons/account1.svg" width={40} height={40} alt="User Profile" />
+          { user ? ( <LinkImage to="/profile" src="/assets/icons/account1.svg" width={40} height={40} alt="User Profile" className="navbutton-profile" /> ) : ( <LinkImage to="/signon" src="/assets/icons/account2.svg" width={40} height={40} alt="Sign In" className="navbutton-profile" /> )}
           {/* Notifications Icon */}
           <LinkImage to="/notifications" src="/assets/icons/notifications.svg" width={30} height={30} alt="Notifications" />
           {/* Settings Icon */}
