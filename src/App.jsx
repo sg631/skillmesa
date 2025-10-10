@@ -22,6 +22,8 @@ function App() {
       if (user) {
         console.log("User is signed in:", user);
         // Fetch user data from Firestore: todo
+        // Log if firebase is active
+        console.log("Firebase is active:", !!auth && !!db);
       } else {
         console.log("No user is signed in.");
       }
