@@ -21,7 +21,6 @@ function App() {
           {/* Menu Button, left aligned stuff, opens sidebar menu */}
           {/* Logo, right aligned stuff */}
           <LinkImage to="/" src="/assets/logos/skillmesa.svg" width={100} height={100}alt="Skillmesa Logo" />
-          <Link>ALERT: Update!</Link>
           <Link to="/home">home</Link>
           <Link to="/comingsoon">dashboard</Link>
           <Link to="/comingsoon">explore</Link>
