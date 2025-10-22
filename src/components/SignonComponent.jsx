@@ -43,6 +43,11 @@ function SignonComponent({ mode = "dual", width, height }) {
                 </li>
                 <li data-display-index="1" style={{ display: activeTab === 1 ? 'block' : 'none' }}>
                     <h1>Log In</h1>
+                    <input type="text" placeholder="Username *" />
+                    <br></br><br></br>
+                    <input type="password" placeholder="Password *" />
+                    <br></br><br></br>
+                    <button onClick={() => console.log("Logging in")}>Log In</button>
                 </li>
             </TabContainerElement>
 
