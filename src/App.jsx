@@ -16,7 +16,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs } from 'firebase/firestore';
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = React.useState(null);
   // Check if user is logged in
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
