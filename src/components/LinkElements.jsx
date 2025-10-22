@@ -11,10 +11,10 @@ function LinkButton({ to, children }) {
         </Link>
     );
 }
-function LinkImage({ to, src, width, height, alt }) {
+function LinkImage({ to, src, width, height, alt, classes}) {
     return (
         <Link to={to} className='link-image'>
-            <img src={src} alt={alt} width={width} height={height}/>
+            <img src={src} alt={alt} width={width} height={height} className={classes} />
         </Link>
     );
 }

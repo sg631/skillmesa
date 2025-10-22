@@ -372,3 +372,14 @@ button:focus,
 button:focus-visible {
   border-color: #000000;
 } */
+.navbutton-profile-loggedin {
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0px 0px 5px rgb(204 221 243);
+  background-color: #dfffff;
+}
+.navbutton-profile-loggedout {
+  border-radius: 0%;
+  object-fit: cover;
+  background: none;
+}

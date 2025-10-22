@@ -22,50 +22,44 @@ function SignonComponent({ mode = "dual", width, height }) {
         password: ""
     });
 
-    function handleSignUp() {
+    async function handleSignUp() {
+        try {
+            const userCredential = await createUserWithEmailAndPassword(
+            auth,
+            signUpData.email,
+            signUpData.password
+            );
+            const user = userCredential.user;
 
-        createUserWithEmailAndPassword(auth, signUpData.email, signUpData.password)
-            .then((userCredential) => {
-                const user = userCredential.user;
-                //Set display name to username
-                updateProfile({
-                    displayName: signUpData.username,
-                    // Generate avatar image using canvas and a function
-                    photoURL: () => {
-                        const canvas = document.createElement('canvas');
-                        canvas.width = 400;
-                        canvas.height = 300;
-                        document.body.appendChild(canvas);
+            // --- generate random colors ---
+            const rand = () => Math.floor(Math.random() * 256);
+            const rectColor = `rgb(${rand()}, ${rand()}, ${rand()})`;
+            const circleColor = `rgb(${rand()}, ${rand()}, ${rand()})`;
 
-                        // Get the 2D rendering context
-                        const ctx = canvas.getContext('2d');
+            // --- build SVG string (rect + circle) ---
+            const svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+                <rect x="50" y="50" width="100" height="100" fill="${rectColor}" />
+                <circle cx="250" cy="150" r="70" fill="${circleColor}" />
+            </svg>
+            `.trim();
 
-                        // Draw something on the canvas (e.g., a red rectangle)
-                        ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
-                        ctx.fillRect(50, 50, 100, 100);
+            // --- convert to data URL (URI-encoded) ---
+            const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
-                        // Draw a blue circle
-                        ctx.beginPath();
-                        ctx.arc(250, 150, 70, 0, Math.PI * 2);
-                        ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
-                        ctx.fill();
-
-                        // Convert the canvas content to a data URL (e.g., PNG)
-                        const imageDataURL = canvas.toDataURL('image/png');
-                        document.body.removeChild(canvas);
-                        return imageDataURL;
-                    }
-                });
-                //Redirect to home page or dashboard
-                window.location.href = "/home";
-            })
-            .catch((error) => {
-                const errorCode = error.code;
-                const errorMessage = error.message;
-                alert("Error " + errorCode + ": " + errorMessage);
+            // --- update profile with username + generated SVG data URL ---
+            await updateProfile(user, {
+            displayName: signUpData.username,
+            photoURL: svgDataUrl
             });
-    }
 
+            // redirect or continue
+            window.location.href = "/home";
+        } catch (error) {
+            alert(`Error ${error.code || ""}: ${error.message || error}`);
+            console.error(error);
+        }
+    }
     function handleLogin() {
         signInWithEmailAndPassword(auth, loginData.email, loginData.password)
     .then((userCredential) => {

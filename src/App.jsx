@@ -38,7 +38,7 @@ function App() {
           <Link to="/comingsoon">explore</Link>
           <Link to="/comingsoon">opportunities</Link>
           {/* User Profile Icon */}
-          { user ? ( <LinkImage to="/profile" src={user.photoURL} width={40} height={40} alt="User Profile" className="navbutton-profile" /> ) : ( <LinkImage to="/signon" src="/assets/icons/account2.svg" width={40} height={40} alt="Sign In" className="navbutton-profile" /> )}
+          { user ? ( <LinkImage to="/profile" src={user.photoURL} width={40} height={40} alt="User Profile" classes="navbutton-profile navbutton-profile-loggedin" /> ) : ( <LinkImage to="/signon" src="/assets/icons/account2.svg" width={40} height={40} alt="Sign In" className="navbutton-profile navbutton-profile-loggedout" /> )}
           {/* Notifications Icon */}
           <LinkImage to="/notifications" src="/assets/icons/notifications.svg" width={30} height={30} alt="Notifications" />
           {/* Settings Icon */}
