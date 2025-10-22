@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { TabBarElement, TabContainerElement } from '../components/TabElements.jsx';
 
 function SignonComponent({ mode = "dual", width, height }) {
-    const [activeTab, setActiveTab] = useState(0);
+    const [activeTab, setActiveTab] = React.useState(0);
 
     return (
         <div className="signup-login-box">
