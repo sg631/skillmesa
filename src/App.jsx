@@ -11,9 +11,10 @@ import { LinkButton } from './components/LinkElements';
 import { LinkImage } from './components/LinkElements';
 import PageTransition from './components/PageTransition';
 //Import firebase using firebase.js
-import {auth, db} from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs } from 'firebase/firestore';
+import { auth } from "./firebase.js";
+
 
 function App() {
   const [user, setUser] = React.useState(null);
