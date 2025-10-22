@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 
 import { TabBarElement, TabContainerElement } from '../components/TabElements.jsx';
 
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth } from "../firebase.js";
 
 
@@ -24,33 +24,61 @@ function SignonComponent({ mode = "dual", width, height }) {
 
     function handleSignUp() {
 
-    createUserWithEmailAndPassword(auth, signUpData.email, signUpData.password)
-  .then((userCredential) => {
-    // For now we only handle basic signup
-    const user = userCredential.user;
-    //Redirect to home page or dashboard
-    window.location.href = "/home";
-  })
-  .catch((error) => {
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    alert("Error " + errorCode + ": " + errorMessage);
-  });
-}
+        createUserWithEmailAndPassword(auth, signUpData.email, signUpData.password)
+            .then((userCredential) => {
+                const user = userCredential.user;
+                //Set display name to username
+                updateProfile({
+                    displayName: signUpData.username,
+                    // Generate avatar image using canvas and a function
+                    photoURL: () => {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 400;
+                        canvas.height = 300;
+                        document.body.appendChild(canvas);
 
-function handleLogin() {
-    signInWithEmailAndPassword(auth, loginData.email, loginData.password)
-  .then((userCredential) => {
-    // Signed in 
-    const user = userCredential.user;
-    window.location.href = "/home";
-  })
-  .catch((error) => {
-    const errorCode = error.code;
-    const errorMessage = error.message;
-    alert("Error " + errorCode + ": " + errorMessage);
-  });
-}
+                        // Get the 2D rendering context
+                        const ctx = canvas.getContext('2d');
+
+                        // Draw something on the canvas (e.g., a red rectangle)
+                        ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+                        ctx.fillRect(50, 50, 100, 100);
+
+                        // Draw a blue circle
+                        ctx.beginPath();
+                        ctx.arc(250, 150, 70, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+                        ctx.fill();
+
+                        // Convert the canvas content to a data URL (e.g., PNG)
+                        const imageDataURL = canvas.toDataURL('image/png');
+                        document.body.removeChild(canvas);
+                        return imageDataURL;
+                    }
+                });
+                //Redirect to home page or dashboard
+                window.location.href = "/home";
+            })
+            .catch((error) => {
+                const errorCode = error.code;
+                const errorMessage = error.message;
+                alert("Error " + errorCode + ": " + errorMessage);
+            });
+    }
+
+    function handleLogin() {
+        signInWithEmailAndPassword(auth, loginData.email, loginData.password)
+    .then((userCredential) => {
+        // Signed in 
+        const user = userCredential.user;
+        window.location.href = "/home";
+    })
+    .catch((error) => {
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        alert("Error " + errorCode + ": " + errorMessage);
+    });
+    }
 
     return (
         <div className="signup-login-box">
