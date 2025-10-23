@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { db } from "../firebase";
 import { collection, getDocs, addDoc, doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 
-function ListingComponent({ id }) {
+function ListingComponent({ listingId }) {
     const listings = collection(db, "listings");
     const [title, setTitle] = useState("Loading...");
     const [description, setDescription] = useState("Loading...");
