@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { LinkButton, LinkImage } from '../components/LinkElements.jsx';
-import { ListingComponent } from '../components/ListingComponent.jsx';
+import ListingComponent from '../components/ListingComponent.jsx';
 
 function HomePage() {
   return (
