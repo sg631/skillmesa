@@ -8,7 +8,7 @@ function HomePage() {
     <>
       <title>home | skillmesa</title>
       <h1>Owned by you</h1>
-      <ListingComponent listingId="exampleListingId1" />
+      <ListingComponent id="exampleListingId1" />
     </>
   );
 }
