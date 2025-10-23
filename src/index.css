@@ -406,6 +406,7 @@ button:focus-visible {
 .listing-description {
   display: -webkit-box;       /* Required for -webkit-line-clamp to work */
   -webkit-line-clamp: 2;      /* Limits the text to 3 lines (or any number you specify) */
+  line-clamp: 2;
   -webkit-box-orient: vertical; /* Required for -webkit-line-clamp to work */
   overflow: hidden;           /* Hides any overflowing content */
   text-overflow: ellipsis;    /* Displays ellipsis for truncated text */
