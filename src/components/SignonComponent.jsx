@@ -4,7 +4,8 @@ import { useLocation } from "react-router-dom";
 import { TabBarElement, TabContainerElement } from '../components/TabElements.jsx';
 
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "../firebase.js";
+import { auth, db } from "../firebase.js";
+import { collection, getDocs, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
 
 
 
@@ -46,11 +47,30 @@ function SignonComponent({ mode = "dual", width, height }) {
 
             // --- convert to data URL (URI-encoded) ---
             const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+            
+            // Add user info to Firestore 'users' collection
+            await setDoc(doc(db, "users", user.uid), {
+                fullname: signUpData.realName,
+                username: signUpData.username,
+                email: signUpData.email,
+                createdAt: new Date(),
+                profilePic: {
+                    setProfilePic: false,
+                    svgDataUrl: svgDataUrl,
+                    currentUrl: svgDataUrl
+                },
+                dob: new Date(signUpData.dob) || null,
+                displayName: signUpData.displayName || signUpData.username,
+                contact: {
+                    email: signUpData.email,
+                    phone: null
+                }
+            });
 
-            // --- update profile with username + generated SVG data URL ---
+            // Update Firebase Auth profile
             await updateProfile(user, {
-            displayName: signUpData.username,
-            photoURL: svgDataUrl
+                displayName: signUpData.displayName || signUpData.username,
+                photoURL: svgDataUrl
             });
 
             // redirect or continue
@@ -98,10 +118,14 @@ function SignonComponent({ mode = "dual", width, height }) {
             </TabBarElement>
             <TabContainerElement tabIndex={activeTab} className="signon-tab-container">
                 <li data-display-index="0" style={{ display: activeTab === 0 ? 'block' : 'none' }}>
-                    <br></br>
-                    <input type="text" placeholder="Real Name" onChange={(e) => setSignUpData({ ...signUpData, realName: e.target.value })}/>
+                    <h1>Sign Up</h1>
+                    <input type="text" placeholder="Full Name *" onChange={(e) => setSignUpData({ ...signUpData, realName: e.target.value })}/>
+                    <br></br><br></br>
+                    <input type="text" placeholder="Display Name" onChange={(e) => setSignUpData({ ...signUpData, displayName: e.target.value })}/>
                     <br></br><br></br>
                     <input type="text" placeholder="Username *" onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })} />
+                    <br></br><br></br>
+                    <input type="date" placeholder="Birthday" onChange={(e) => setSignUpData({ ...signUpData, dob: e.target.value })} />
                     <br></br><br></br>
                     <input type="email" placeholder="Email *" onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })} />
                     <br></br><br></br>

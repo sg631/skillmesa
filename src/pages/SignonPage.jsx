@@ -20,7 +20,7 @@ function SignonPage() {
       }}
     >
       <title>sign in | skillmesa</title>
-      <SignonComponent width={"60%"} height={"calc(60vh - 75px)"} mode="dual" />
+      <SignonComponent width={"60%"} height={"calc(85vh - 75px)"} mode="dual" />
     </div>
   );
 }
