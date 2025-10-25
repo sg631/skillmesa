@@ -117,7 +117,7 @@ function SignonComponent({ mode = "dual", width, height }) {
                 <li onClick={() => setActiveTab(1)}>Log In</li>
             </TabBarElement>
             <TabContainerElement tabIndex={activeTab} className="signon-tab-container">
-                <li data-display-index="0" style={{ display: activeTab === 0 ? 'block' : 'none' }}>
+                <li data-display-index="0" style={{ display: activeTab === 0 ? 'block' : 'none' }}><form onSubmit={(e) =>{e.preventDefault();handleSignUp()}}>
                     <h1>Sign Up</h1>
                     <input type="text" placeholder="Full Name *" onChange={(e) => setSignUpData({ ...signUpData, realName: e.target.value })}/>
                     <br></br><br></br>
@@ -129,18 +129,18 @@ function SignonComponent({ mode = "dual", width, height }) {
                     <br></br><br></br>
                     <input type="email" placeholder="Email *" onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })} />
                     <br></br><br></br>
-                    <input type="password" placeholder="Password *" onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}/>
+                    <input type="password" autoComplete="skillmesa" placeholder="Password *" onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}/>
                     <br></br><br></br>
-                    <button onClick={() => handleSignUp()}>Sign Up</button>
-                </li>
-                <li data-display-index="1" style={{ display: activeTab === 1 ? 'block' : 'none' }}>
+                    <button type="submit">Sign Up</button>
+                </form></li>
+                <li data-display-index="1" style={{ display: activeTab === 1 ? 'block' : 'none' }}><form onSubmit={(e) =>{e.preventDefault();handleLogin()}}>
                     <h1>Log In</h1>
                     <input type="text" placeholder="Email *" onChange={(e) => setLoginData({ ...loginData, email: e.target.value })} />
                     <br></br><br></br>
-                    <input type="password" placeholder="Password *" onChange={(e) => setLoginData({ ...loginData, password: e.target.value })} />
+                    <input type="password" autoComplete="skillmesa" placeholder="Password *" onChange={(e) => setLoginData({ ...loginData, password: e.target.value })} />
                     <br></br><br></br>
-                    <button onClick={() => handleLogin()}>Log In</button>
-                </li>
+                    <button type="submit">Log In</button>
+                </form></li>
             </TabContainerElement>
 
         </div>

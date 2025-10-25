@@ -1,11 +1,12 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 
 import HomePage from './pages/HomePage';
 import StartingPage from './pages/StartingPage';
 import NotFoundPage from './pages/NotFoundPage';
 import ComingSoonPage from './pages/ComingSoonPage';
 import SignonPage from './pages/SignonPage';
+import ProfilePage from './pages/ProfilePage';
 
 import { LinkButton } from './components/LinkElements';
 import { LinkImage } from './components/LinkElements';
@@ -60,6 +61,10 @@ function App() {
               <Route path="/signon" element={<SignonPage />} />
               <Route path="/comingsoon" element={<ComingSoonPage />} />
               <Route path="/home" element={<HomePage />} />
+              <Route path="/profile/:userUIDparam" element={<ProfilePage />} />
+              <Route path="/notifications" element={<ComingSoonPage />} />
+              <Route path="/settings" element={<ComingSoonPage />} />
+              <Route path="/profile" element={ user ? (<Navigate to={"/profile/" + user.uid} />) : (<Navigate to="/signon" />)} />
             </Routes>
           </PageTransition>
         </div>

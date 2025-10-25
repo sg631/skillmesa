@@ -470,3 +470,29 @@ button:focus-visible {
 .fullwidth {
   width: 100%;
 }
+code {
+  font-family: 'Courier New', Courier, monospace;
+  background-color: #f4f4f4;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+.profilepic-inline {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background-color: #fffceb;
+  border: solid #ededed79 0.5px;
+  margin-right: 10px;
+  display: inline-block;
+}
+code.acc {
+  border: solid #d9d9d9b1 0.5px;
+  color:#565656;
+  font-family: 'Segoe UI', 'Roboto', 'Oxygen', Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background-color: #fff8cd;
+  padding: 4px 8px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  height:auto
+}
