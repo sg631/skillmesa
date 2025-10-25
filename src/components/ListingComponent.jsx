@@ -12,6 +12,7 @@ function ListingComponent({ id }) {
   const [ownerName, setOwnerName] = useState("Loading...");
   const [profilePicUrl, setProfilePicUrl] = useState("");
   const [tags, setTags] = useState([]);
+  const [thumbnailUrl, setThumbnailUrl] = useState("");
 
   useEffect(() => {
     async function fetchListing() {
@@ -20,15 +21,16 @@ function ListingComponent({ id }) {
         const listingSnap = await getDoc(listingDoc);
 
         if (listingSnap.exists()) {
-          const data = listingSnap.data();
-          setTitle(data.title);
-          setDescription(data.description);
-          setTags(data.tags || []);
-          setOwnerUID(data.owner || null);
+            const data = listingSnap.data();
+            setTitle(data.title);
+            setDescription(data.description);
+            setTags(data.tags || []);
+            setOwnerUID(data.owner || null);
+            setThumbnailUrl(data.thumbnailURL || "");
         } else {
-          setTitle("Listing not found");
-          setDescription("");
-          setTags([]);
+            setTitle("Listing not found");
+            setDescription("");
+            setTags([]);
         }
       } catch (error) {
         console.error("Error fetching listing:", error);
@@ -63,7 +65,7 @@ function ListingComponent({ id }) {
 
   return (
     <div className="listing">
-      <img className="listing-thumbnail" alt="Listing thumbnail" />
+      <img className="listing-thumbnail" alt="Listing thumbnail" src={thumbnailUrl}/>
       <span className="listing-title">{title}</span>
       <p className="listing-description">{description}</p>
 

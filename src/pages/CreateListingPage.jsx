@@ -1,21 +1,20 @@
 import React from 'react';
-import { LinkButton } from '../components/LinkElements.jsx';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth, db } from "../firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { auth, db, storage } from "../firebase";
+import { collection, addDoc, updateDoc, doc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 function CreateListingPage() {
   const [user, setUser] = React.useState(null);
   const [checkedAuth, setCheckedAuth] = React.useState(false);
   const [previewUrl, setPreviewUrl] = React.useState(null);
   const [selectedImage, setSelectedImage] = React.useState(null);
-
-  // form fields
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [tags, setTags] = React.useState("");
   const [category, setCategory] = React.useState("coding");
   const [type, setType] = React.useState("class");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -37,6 +36,12 @@ function CreateListingPage() {
       alert("You must be signed in to create a listing.");
       return;
     }
+    if (!title || !description) {
+      alert("Please fill out all required fields.");
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
       const tagsArray = tags
@@ -44,9 +49,9 @@ function CreateListingPage() {
         .map((tag) => tag.trim())
         .filter((tag) => tag.length > 0);
 
+      // 1️⃣ Create the Firestore doc first
       const listingsRef = collection(db, "listings");
-
-      await addDoc(listingsRef, {
+      const newListingRef = await addDoc(listingsRef, {
         title,
         description,
         owner: user.uid,
@@ -55,15 +60,38 @@ function CreateListingPage() {
         category,
         type,
         editors: [],
-        createdAt: new Date().toISOString()
+        thumbnailURL: "", // placeholder
+        createdAt: new Date().toISOString(),
       });
 
-      alert("Listing created successfully!");
-      // optional: redirect to home
+      let imageURL = "";
+
+      // 2️⃣ Upload image (if any)
+      if (selectedImage) {
+        const fileExtension = selectedImage.name.split(".").pop();
+        const imageRef = ref(
+          storage,
+          `listings/${newListingRef.id}/thumbnail.${fileExtension}`
+        );
+
+        await uploadBytes(imageRef, selectedImage);
+        imageURL = await getDownloadURL(imageRef);
+      }
+
+      // 3️⃣ Update Firestore doc with the image URL
+      if (imageURL) {
+        await updateDoc(doc(db, "listings", newListingRef.id), {
+          thumbnailURL: imageURL,
+        });
+      }
+
+      alert("✅ Listing created successfully!");
       window.location.href = "/home";
     } catch (error) {
       console.error("Error creating listing:", error);
       alert("Failed to create listing. Check console for details.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -75,13 +103,13 @@ function CreateListingPage() {
 
       <input
         type="text"
-        placeholder="Title"
+        placeholder="Title *"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       /><br /><br />
 
       <textarea
-        placeholder="Description"
+        placeholder="Description *"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
       ></textarea><br /><br />
@@ -93,32 +121,36 @@ function CreateListingPage() {
         onChange={(e) => setTags(e.target.value)}
       /><br /><br />
 
-      <select
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
-      >
+      <select value={category} onChange={(e) => setCategory(e.target.value)}>
         <option value="coding">Coding</option>
         <option value="design">Design</option>
         <option value="writing">Writing</option>
         <option value="music">Music</option>
-        <option value="marketing">Marketing</option>
+        <option value="math">Math</option>
         <option value="business">Business</option>
         <option value="other">Other</option>
       </select><br /><br />
 
-      <select
-        value={type}
-        onChange={(e) => setType(e.target.value)}
-      >
+      <select value={type} onChange={(e) => setType(e.target.value)}>
         <option value="class">Class</option>
         <option value="service">Skill service</option>
       </select><br /><br />
 
-      <h2>Upload Thumbnail:</h2><br />
+      <h2>Upload Thumbnail</h2><br />
       <input type="file" accept="image/*" onChange={handleImageSelect} /><br /><br />
-      {previewUrl && <img className="listing-thumbnail" src={previewUrl} alt="Preview" />}<br /><br />
 
-      <button onClick={handleSubmit}>Submit Listing</button>
+      {previewUrl && (
+        <img
+          className="listing-thumbnail"
+          src={previewUrl}
+          alt="Preview"
+        />
+      )}
+      <br /><br />
+
+      <button onClick={handleSubmit} disabled={isSubmitting}>
+        {isSubmitting ? "Submitting..." : "Submit Listing"}
+      </button>
 
       <footer className="texttiny">
         Skillmesa is currently in development. Stay tuned for updates!

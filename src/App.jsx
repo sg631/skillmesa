@@ -28,10 +28,6 @@ function App() {
     return unsubscribe;
   }, []);
 
-  if (user === undefined) {
-    return <p>Loading...</p>;
-  }
-
   return (
     <Router>
       <div>
@@ -60,7 +56,7 @@ function App() {
         </div>
         <div className="content">
           <PageTransition>
-            <Routes>
+            {user != undefined ? (<Routes>
               <Route path="*" element={<NotFoundPage />} />
               <Route path="/" element={<StartingPage />} />
               <Route path="/signon" element={<SignonPage />} />
@@ -71,7 +67,7 @@ function App() {
               <Route path="/settings" element={<ComingSoonPage />} />
               <Route path="/create" element={ user ? (<CreateListingPage />) : (<Navigate to="/signon" />)} />
               <Route path="/profile" element={ user ? (<Navigate to={"/profile/" + user.uid} />) : (<Navigate to="/signon" />)} />
-            </Routes>
+            </Routes>) : (<><br /><br /><span className="textmedium textcenter">Loading.. Please check your internet if this takes too long.</span></>)}
           </PageTransition>
         </div>
       </div>
