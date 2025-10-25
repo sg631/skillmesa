@@ -93,8 +93,9 @@ function ProfilePage() {
         <h2>Listings</h2>
         <ListingsPanel
           query={ownerQuery}
-          size={20}
+          size={5}
           emptyMessage="This person has no listings yet"
+          paginated={true}
         />
       </div>
 

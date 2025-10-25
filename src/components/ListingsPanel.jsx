@@ -1,89 +1,125 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import ListingComponent from "./ListingComponent.jsx";
-import { getDocs } from "firebase/firestore";
+import { getDocs, query as makeQuery, limit, startAfter } from "firebase/firestore";
 
 function ListingsPanel({
   query,
-  size = 5,               // number of listings per page
-  maxResults = null,       // optional: limit total number of results
-  paginated = true,        // whether to paginate or show all at once
+  size = 5,
+  paginated = true,
   className = "listings-panel",
-  emptyMessage = "No listings found."
+  emptyMessage = "No listings found.",
 }) {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pageCursors, setPageCursors] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [lastDoc, setLastDoc] = useState(null);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const scrollRef = useRef(null);
+
+  async function fetchPage(afterDoc = null) {
+    if (!query) return;
+
+    setLoading(true);
+    try {
+      let q = query;
+      if (paginated) {
+        q = afterDoc
+          ? makeQuery(query, startAfter(afterDoc), limit(size))
+          : makeQuery(query, limit(size));
+      }
+
+      const snap = await getDocs(q);
+      const fetched = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const last = snap.docs[snap.docs.length - 1] || null;
+
+      setHasNextPage(snap.size === size);
+      setListings(fetched);
+      setLastDoc(last);
+    } catch (err) {
+      console.error("Error fetching paginated listings:", err);
+      setListings([]);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    let isMounted = true;
-
-    async function fetchListings() {
-      if (!query) {
-        if (isMounted) {
-          setListings([]);
-          setLoading(false);
-        }
-        return;
-      }
-
-      try {
-        const querySnapshot = await getDocs(query);
-        let fetchedListings = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-        if (maxResults) {
-          fetchedListings = fetchedListings.slice(0, maxResults);
-        }
-
-        if (isMounted) {
-          setListings(fetchedListings);
-          setLoading(false);
-          setCurrentPage(1); // reset pagination
-        }
-      } catch (error) {
-        console.error("Error fetching listings:", error);
-        if (isMounted) {
-          setListings([]);
-          setLoading(false);
-        }
-      }
+    if (query) {
+      setPageCursors([]);
+      setCurrentPage(1);
+      fetchPage(null);
     }
+  }, [query]);
 
-    fetchListings();
+  const handleNextPage = async (e) => {
+    e.preventDefault(); // ✅ prevent page jump
+    if (!lastDoc || !hasNextPage) return;
+    setPageCursors((prev) => [...prev, lastDoc]);
+    setCurrentPage((prev) => prev + 1);
+    await fetchPage(lastDoc);
+  };
 
-    return () => { isMounted = false; };
-  }, [query, maxResults]);
+  const handlePrevPage = async (e) => {
+    e.preventDefault(); // ✅ prevent page jump
+    if (currentPage <= 1) return;
+    const prevCursors = [...pageCursors];
+    prevCursors.pop();
+    const prevCursor = prevCursors[prevCursors.length - 1] || null;
+    setPageCursors(prevCursors);
+    setCurrentPage((prev) => prev - 1);
+    await fetchPage(prevCursor);
+  };
 
   if (loading) return <p>Loading listings...</p>;
   if (listings.length === 0) return <p>{emptyMessage}</p>;
 
-  // Pagination calculation
-  const totalPages = Math.ceil(listings.length / size);
-  const startIndex = (currentPage - 1) * size;
-  const endIndex = startIndex + size;
-  const currentListings = paginated ? listings.slice(startIndex, endIndex) : listings.slice(0, maxResults || listings.length);
-
-  const handlePrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
-  const handleNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
-
   return (
-    <div className={className}>
-      {currentListings.map(listing => (
-        <ListingComponent key={listing.id} id={listing.id} {...listing} />
-      ))}
-
-      {paginated && totalPages > 1 && (
-        <div className="pagination-controls" style={{ marginTop: "1em" }}>
-          <button onClick={handlePrevPage} disabled={currentPage === 1}>
-            Prev
-          </button>
-          <span style={{ margin: "0 0.5em" }}>
-            Page {currentPage} of {totalPages}
-          </span>
-          <button onClick={handleNextPage} disabled={currentPage === totalPages}>
-            Next
-          </button>
+    <div
+      className="listings-panel-wrapper"
+      style={{ height: "800px", overflow: "hidden", position: "relative" }}
+    >
+      <div className={className} style={{ height: "100%", position: "relative" }}>
+        <div
+          className="listings-scroll"
+          ref={scrollRef}
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            gap: "16px",
+            overflowX: "auto",
+            overflowY: "hidden",
+            height: "100%",
+            scrollBehavior: "smooth",
+          }}
+        >
+          {listings.map((listing) => (
+            <ListingComponent key={listing.id} id={listing.id} {...listing} />
+          ))}
         </div>
-      )}
+
+        {paginated && (
+          <div
+            className="pagination-controls"
+            style={{
+              position: "absolute",
+              bottom: "10px",
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              gap: "10px",
+            }}
+          >
+            <button onClick={handlePrevPage} disabled={currentPage === 1}>
+              ←
+            </button>
+            <span>Page {currentPage}</span>
+            <button onClick={handleNextPage} disabled={!hasNextPage}>
+              →
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

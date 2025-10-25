@@ -29,7 +29,8 @@ function HomePage() {
       <LinkButton to="/create" className="textcenter">Create new</LinkButton>
       <ListingsPanel
         query={userListingsQuery}
-        size={20}
+        size={5}
+        paginated={true}
         emptyMessage="You have no listings yet."
       />
     </>
