@@ -32,20 +32,20 @@ function App() {
     <Router>
       <div>
         <nav>
-          {/* Menu Button, left aligned stuff, opens sidebar menu */}
-          {/* Logo, right aligned stuff */}
-          <LinkImage to="/" src="/assets/logos/skillmesa.svg" width={100} height={100}alt="Skillmesa Logo" />
+          <LinkImage to="/" src="/assets/logos/skillmesa.svg" width={100} height={100} alt="Skillmesa Logo" />
           <Link to="/home">home</Link>
           <Link to="/comingsoon">dashboard</Link>
           <Link to="/comingsoon">explore</Link>
           <Link to="/comingsoon">opportunities</Link>
-          {/* User Profile Icon */}
-          { user ? ( <LinkImage to="/profile" src={user.photoURL} width={40} height={40} alt="User Profile" classes="navbutton-profile navbutton-profile-loggedin" /> ) : ( <LinkImage to="/signon" src="/assets/icons/account2.svg" width={40} height={40} alt="Sign In" className="navbutton-profile navbutton-profile-loggedout" /> )}
-          {/* Notifications Icon */}
+          {user ? (
+            <LinkImage to="/profile" src={user.photoURL} width={40} height={40} alt="User Profile" classes="navbutton-profile navbutton-profile-loggedin" />
+          ) : (
+            <LinkImage to="/signon" src="/assets/icons/account2.svg" width={40} height={40} alt="Sign In" className="navbutton-profile navbutton-profile-loggedout" />
+          )}
           <LinkImage to="/notifications" src="/assets/icons/notifications.svg" width={30} height={30} alt="Notifications" />
-          {/* Settings Icon */}
           <LinkImage to="/settings" src="/assets/icons/settings.svg" width={30} height={30} alt="Settings" />
         </nav>
+
         <div className="blobs">
           <div className="blob"></div>
           <div className="blob"></div>
@@ -54,25 +54,38 @@ function App() {
           <div className="blob"></div>
           <div className="blob"></div>
         </div>
+
         <div className="content">
           <PageTransition>
-            {user != undefined ? (<Routes>
-              <Route path="*" element={<NotFoundPage />} />
-              <Route path="/" element={<StartingPage />} />
-              <Route path="/signon" element={<SignonPage />} />
-              <Route path="/comingsoon" element={<ComingSoonPage />} />
-              <Route path="/home" element={<HomePage />} />
-              <Route path="/profile/:userUIDparam" element={<ProfilePage />} />
-              <Route path="/notifications" element={<ComingSoonPage />} />
-              <Route path="/settings" element={<ComingSoonPage />} />
-              <Route path="/create" element={ user ? (<CreateListingPage />) : (<Navigate to="/signon" />)} />
-              <Route path="/profile" element={ user ? (<Navigate to={"/profile/" + user.uid} />) : (<Navigate to="/signon" />)} />
-            </Routes>) : (<><br /><br /><span className="textmedium textcenter">Loading.. Please check your internet if this takes too long.</span></>)}
+            {/* Always render Routes */}
+            {user === undefined ? (
+              <span className="textmedium textcenter">Loading.. Please check your internet if this takes too long.</span>
+            ) : (
+              <Routes>
+                <Route path="*" element={<NotFoundPage />} />
+                <Route path="/" element={<StartingPage />} />
+                <Route path="/signon" element={<SignonPage />} />
+                <Route path="/comingsoon" element={<ComingSoonPage />} />
+                <Route path="/home" element={<HomePage />} />
+                <Route path="/profile/:userUIDparam" element={<ProfilePage />} />
+                <Route path="/notifications" element={<ComingSoonPage />} />
+                <Route path="/settings" element={<ComingSoonPage />} />
+                <Route
+                  path="/create"
+                  element={user ? <CreateListingPage /> : <Navigate to="/signon" />}
+                />
+                <Route
+                  path="/profile"
+                  element={user ? <Navigate to={"/profile/" + user.uid} /> : <Navigate to="/signon" />}
+                />
+              </Routes>
+            )}
           </PageTransition>
         </div>
       </div>
     </Router>
   );
 }
+
 
 export default App;

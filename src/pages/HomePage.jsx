@@ -1,56 +1,37 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { LinkButton } from '../components/LinkElements.jsx';
-import ListingComponent from '../components/ListingComponent.jsx';
+import ListingsPanel from '../components/ListingsPanel.jsx';
 import { auth, db } from '../firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 
 const listingsCollection = collection(db, "listings");
 
 function HomePage() {
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const user = auth.currentUser;
 
-  useEffect(() => {
-    let isMounted = true;
+  if (!user) {
+    return (
+      <>
+        <title>home | skillmesa</title>
+        <h1>Your listings</h1>
+        <LinkButton to="/create" className="textcenter">Create new</LinkButton>
+        <p>Please sign in to view your listings.</p>
+      </>
+    );
+  }
 
-    async function fetchUserListings() {
-      if (!auth.currentUser) {
-        setListings([]);
-        setLoading(false);
-        return;
-      }
-
-      const q = query(listingsCollection, where("owner", "==", auth.currentUser.uid));
-      const querySnapshot = await getDocs(q);
-      const userListings = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      if (isMounted) {
-        setListings(userListings);
-        setLoading(false);
-      }
-    }
-
-    fetchUserListings();
-
-    return () => { isMounted = false; };
-  }, []);
+  const userListingsQuery = query(listingsCollection, where("owner", "==", user.uid));
 
   return (
     <>
       <title>home | skillmesa</title>
       <h1>Your listings</h1>
       <LinkButton to="/create" className="textcenter">Create new</LinkButton>
-      <br /><br />
-
-      {loading ? (
-        <p>Loading your listings...</p>
-      ) : listings.length > 0 ? (
-        listings.map(listing => (
-          <ListingComponent key={listing.id} id={listing.id} {...listing} />
-        ))
-      ) : (
-        <p>You have no listings yet.</p>
-      )}
+      <ListingsPanel
+        query={userListingsQuery}
+        size={20}
+        emptyMessage="You have no listings yet."
+      />
     </>
   );
 }
