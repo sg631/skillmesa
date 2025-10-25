@@ -7,6 +7,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import ComingSoonPage from './pages/ComingSoonPage';
 import SignonPage from './pages/SignonPage';
 import ProfilePage from './pages/ProfilePage';
+import CreateListingPage from './pages/CreateListingPage';
 
 import { LinkButton } from './components/LinkElements';
 import { LinkImage } from './components/LinkElements';
@@ -18,15 +19,19 @@ import { auth } from "./firebase.js";
 
 
 function App() {
-  const [user, setUser] = React.useState(null);
-  // Check if user is logged in
+  const [user, setUser] = React.useState(undefined);
+
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-    }
-    );
-    return () => unsubscribe();
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setUser(u || null);
+    });
+    return unsubscribe;
   }, []);
+
+  if (user === undefined) {
+    return <p>Loading...</p>;
+  }
+
   return (
     <Router>
       <div>
@@ -64,6 +69,7 @@ function App() {
               <Route path="/profile/:userUIDparam" element={<ProfilePage />} />
               <Route path="/notifications" element={<ComingSoonPage />} />
               <Route path="/settings" element={<ComingSoonPage />} />
+              <Route path="/create" element={ user ? (<CreateListingPage />) : (<Navigate to="/signon" />)} />
               <Route path="/profile" element={ user ? (<Navigate to={"/profile/" + user.uid} />) : (<Navigate to="/signon" />)} />
             </Routes>
           </PageTransition>

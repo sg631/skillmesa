@@ -88,7 +88,7 @@ function ProfilePage() {
 
   return (
     <>
-      <title>Skillmesa | User Profile</title>
+      <title>profile | skillmesa</title>
       <div className="profile-container">
         <h1>{displayName}</h1>
 

@@ -39,7 +39,7 @@ function HomePage() {
     <>
       <title>home | skillmesa</title>
       <h1>Your listings</h1>
-      <LinkButton to="/profile" className="textcenter">Create new</LinkButton>
+      <LinkButton to="/create" className="textcenter">Create new</LinkButton>
       <br /><br />
 
       {loading ? (
