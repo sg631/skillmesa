@@ -16,6 +16,7 @@ import PageTransition from './components/PageTransition';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs } from 'firebase/firestore';
 import { auth } from "./firebase.js";
+import ListingDetailPage from './pages/ListingDetailPage.jsx';
 
 
 function App() {
@@ -74,6 +75,7 @@ function App() {
                   path="/create"
                   element={user ? <CreateListingPage /> : <Navigate to="/signon" />}
                 />
+                <Route path="/listing/:listingId" element={<ListingDetailPage />} />
                 <Route
                   path="/profile"
                   element={user ? <Navigate to={"/profile/" + user.uid} /> : <Navigate to="/signon" />}

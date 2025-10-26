@@ -427,7 +427,8 @@ button:focus-visible {
   border-radius: 15px;
   background-color: rgb(250, 250, 250);
   cursor: pointer;
-  border-bottom: solid rgba(208, 208, 208, 0.5) 3px
+  border-bottom: solid rgba(208, 208, 208, 0.5) 3px;
+  line-height: 50px;
 }
 .controls {
   width: 350px;
@@ -439,26 +440,22 @@ button:focus-visible {
   line-height-step: 25px;
 }
 .accdisplay-profilepic {
+  display: inline-block;
+  vertical-align: middle;
   width: 35px;
   height: 35px;
   border-radius: 50%;
   background-color: #dfffff;
   margin-left: 25px;
-  display:block;
-  margin-top:7.5px;
-  position:absolute;
+  margin-right: 10px;
 }
 .accdisplay-text {
-  margin-left: 75px;
-  line-height: 50px;
+  display: inline-block;
+  vertical-align: middle;
   max-width: 185px;
-  vertical-align: bottom;
-  display: -webkit-box;       /* Required for -webkit-line-clamp to work */
-  -webkit-line-clamp: 1;      /* Limits the text to 3 lines (or any number you specify) */
-  line-clamp: 1;
-  -webkit-box-orient: vertical; /* Required for -webkit-line-clamp to work */
-  overflow: hidden;           /* Hides any overflowing content */
-  text-overflow: ellipsis
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .listing-tags-container {
   display:block;
@@ -596,16 +593,16 @@ select option {
 }
 
 .listings-panel-wrapper {
-  transform: scale(0.85);
-  transform-origin: top center; /* scale from top so pagination stays in view */
   width: 100%;
+  transform: scale(0.85);
+  transform-origin: top center;
+  overflow: visible; /* allow scrollbar from outer to be visible */
 }
-
 .listings-panel {
   position: relative;
   width: 100%;
-  overflow: hidden;
-  padding-bottom: 60px; /* leave room for pagination */
+  overflow: visible; /* <-- important: keep scrollbar visible */
+  padding-bottom: 60px;
 }
 
 /* horizontal scroll container */
@@ -613,14 +610,9 @@ select option {
   display: flex;
   flex-direction: row;
   gap: 16px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-behavior: smooth;
-  padding: 10px;
-  width: 100%;
-  min-height: auto;
-  height: 750px;
-  scroll-behavior: smooth;
+  /* don't set overflow here anymore */
+  height: 100%;
+  align-items: flex-start; /* optional */
 }
 
 /* make each listing not shrink and stay side-by-side */
@@ -630,16 +622,15 @@ select option {
 
 /* custom scrollbar styles */
 .listings-scroll::-webkit-scrollbar {
-  height: 8px;
+  height: 10px; /* slightly thicker for visibility */
 }
 .listings-scroll::-webkit-scrollbar-thumb {
-  background-color: #c1c1c1;
-  border-radius: 4px;
+  background-color: #b1b1b1;
+  border-radius: 5px;
 }
 .listings-scroll::-webkit-scrollbar-track {
-  background-color: #f1f1f1;
+  background-color: #f0f0f0;
   border-radius: 4px;
-  top: 0;
 }
 
 /* pagination bar fixed bottom center */
@@ -668,7 +659,7 @@ select option {
   font-family: inherit;
   background-color: #ffffff;
   cursor: pointer;
-  outline:none;
+  outline: none;
   box-shadow: 0px 2px 0px rgb(204 221 243);
   transform: translateY(1px);
   transition: box-shadow 0.15s, transform 0.15s, background-color 0.15s;
@@ -676,4 +667,77 @@ select option {
 
 .pagination-controls span {
   white-space: nowrap;
+}
+
+.listings-scroll-outer {
+  width: 100%;
+  overflow-x: auto;     /* native scrollbar belongs to this element */
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* keep height equal to scroll area */
+  height: 750px;        /* same height you want for the visible area */
+  display: block;
+  box-sizing: border-box;
+  padding: 10px;
+}
+
+.listing-detail-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: flex-start; /* panel on the left */
+  align-items: stretch;        /* make it full height */
+  background: rgba(0, 9, 42, 0.581); /* for backdrop-filter visibility */
+  backdrop-filter: blur(6px);
+  overflow-y: auto;
+  z-index: 100;
+}
+
+/* connected side panel */
+.largelisting {
+  width: 700px;
+  height: calc(100% - 40px);
+  background-color: white;
+  border: none;
+  border-radius: 0;   /* no rounded corners */
+  box-shadow: none;   /* remove shadow */
+  padding: 20px;
+  overflow-y: scroll;   /* scroll inside the panel if needed */
+  margin: 0;          /* no margin */
+  border-right: solid rgba(208, 208, 208, 0.5) 3px;
+}
+
+/* thumbnail image */
+.largelisting .listing-thumbnail {
+  width: 560px;
+  height: 320px;
+  object-fit: cover;
+  outline: solid rgb(234, 234, 234) 3px;
+}
+
+/* account display section */
+.largelisting .accdisplay {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.listing-detail-more-details {
+  width: calc(100% - 700px);
+  height: calc(100% - 40px);
+  background-color: white;
+  border: none;
+  border-radius: 0;   /* no rounded corners */
+  box-shadow: none;   /* remove shadow */
+  padding: 20px;
+  overflow-y: scroll;   /* scroll inside the panel if needed */
+  margin: 0;          /* no margin */
+}
+
+.largelisting .listing-tags-container {
+  width: calc(100% - 40px);
+  max-width: none;
+  margin-top: 10px;
 }

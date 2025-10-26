@@ -3,18 +3,20 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db, storage } from "../firebase";
 import { collection, addDoc, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import DropinImgEditor from '../components/DropinImgEditor';
 
 function CreateListingPage() {
-  const [user, setUser] = React.useState(null);
-  const [checkedAuth, setCheckedAuth] = React.useState(false);
-  const [previewUrl, setPreviewUrl] = React.useState(null);
-  const [selectedImage, setSelectedImage] = React.useState(null);
-  const [title, setTitle] = React.useState("");
-  const [description, setDescription] = React.useState("");
-  const [tags, setTags] = React.useState("");
-  const [category, setCategory] = React.useState("coding");
-  const [type, setType] = React.useState("class");
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [user, setUser] = React.useState(null);
+    const [checkedAuth, setCheckedAuth] = React.useState(false);
+    const [previewUrl, setPreviewUrl] = React.useState(null);
+    const [selectedImage, setSelectedImage] = React.useState(null);
+    const [title, setTitle] = React.useState("");
+    const [description, setDescription] = React.useState("");
+    const [tags, setTags] = React.useState("");
+    const [category, setCategory] = React.useState("coding");
+    const [type, setType] = React.useState("class");
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [online, setOnline] = React.useState(true);
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -59,6 +61,7 @@ function CreateListingPage() {
         tags: tagsArray,
         category,
         type,
+        online,
         editors: [],
         thumbnailURL: "", // placeholder
         createdAt: new Date().toISOString(),
@@ -136,9 +139,18 @@ function CreateListingPage() {
         <option value="service">Skill service</option>
       </select><br /><br />
 
-      <h2>Upload Thumbnail</h2><br />
-      <input type="file" accept="image/*" onChange={handleImageSelect} /><br /><br />
+      <select value={online} onChange={(e) => setOnline(e.target.value)}>
+        <option value="in-person">In-person (Recommended)</option>
+        <option value="online">Online</option>
+      </select><br /><br />
 
+      <h2>Upload Thumbnail</h2>
+        <p>
+        You can use the Filerobot image editor if you wish to create <br /> a thumbnail right away. You have to still download the picture and <br />upload it as a thumbnail. It is currently highly expirimental and may not <br />function as intended.
+        </p>
+      <input type="file" accept="image/*" onChange={handleImageSelect} /><br /><br />
+        <DropinImgEditor />
+      <br /><br />
       {previewUrl && (
         <img
           className="listing-thumbnail"
@@ -147,7 +159,6 @@ function CreateListingPage() {
         />
       )}
       <br /><br />
-
       <button onClick={handleSubmit} disabled={isSubmitting}>
         {isSubmitting ? "Submitting..." : "Submit Listing"}
       </button>
