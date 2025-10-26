@@ -10,7 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lexical/history": "^0.37.0",
+    "@lexical/link": "^0.37.0",
+    "@lexical/list": "^0.37.0",
+    "@lexical/react": "^0.37.0",
+    "@lexical/rich-text": "^0.37.0",
     "firebase": "^12.1.0",
+    "lexical": "^0.37.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-filerobot-image-editor": "^4.9.1",

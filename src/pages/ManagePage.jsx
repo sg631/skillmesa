@@ -5,6 +5,8 @@ import { db, auth } from "../firebase";
 import { LinkButton, LinkImage } from "../components/LinkElements"
 import AlertComponent from '../components/ShowAlert'
 import showAlert from "../components/ShowAlert";
+import { TabBarElement, TabContainerElement } from "../components/TabElements";
+import TextEditor from "../components/TextEditor";
 
 function ManagePage() {
   const { listingId } = useParams(); // route param
@@ -133,7 +135,15 @@ function ManagePage() {
         <button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);showAlert(<p>Copied share link! <br /><code>{"https://skill-mesa.web.app/share/" + listingData.id}</code></p>)}}>Share</button>
       </div>
       <div className="listing-detail-more-details">
-        <br/><br/><br/><button>Save</button>
+        <br/><br/><br/>
+        <TabBarElement>
+          <li>Attached Info</li><li>Images</li><li>Filerobot Editor</li><li>Files</li><li>Manage</li>
+        </TabBarElement>
+        <TabContainerElement>
+          <li>
+            <TextEditor></TextEditor>
+          </li>
+        </TabContainerElement>
       </div>
     </div>
   );
