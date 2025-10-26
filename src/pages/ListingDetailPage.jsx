@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { LinkButton, LinkImage } from "../components/LinkElements"
-
+import showAlert from "../components/ShowAlert";
 
 function ListingDetailPage() {
   const { listingId } = useParams(); // route param
@@ -131,7 +131,7 @@ function ListingDetailPage() {
         <LinkButton to={`/manage/${listingId}`} disabled={user ? user.uid != listingData.owner : true}>Manage</LinkButton><hr/>
         <LinkButton to={`/contact/${listingData.owner}`}>Inquire</LinkButton>
         <hr />
-        <button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);window.alert("Copied share link!")}}>Share</button>
+        <button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);showAlert(<p>Copied share link! <br /><code>{"https://skill-mesa.web.app/share/" + listingData.id}</code></p>)}}>Share</button>
       </div>
       <div className="listing-detail-more-details"><p>Hello</p></div>
     </div>

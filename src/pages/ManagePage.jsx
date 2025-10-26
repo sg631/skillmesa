@@ -130,7 +130,7 @@ function ManagePage() {
       </ul>
 
         <button disabled>Locked Resource Page (COMING SOON)</button><hr/>
-        <button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);window.alert("Copied share link!")}}>Share</button>
+        <button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);showAlert(<p>Copied share link! <br /><code>{"https://skill-mesa.web.app/share/" + listingData.id}</code></p>)}}>Share</button>
       </div>
       <div className="listing-detail-more-details">
         <br/><br/><br/><button>Save</button>
