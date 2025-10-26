@@ -127,7 +127,7 @@ function ListingDetailPage() {
       </ul>
 
         <button disabled>Locked Resource Page (COMING SOON)</button><hr/>
-        <LinkButton to={`/manage/${listingId}`} disabled={user.uid != listingData.owner}>Manage</LinkButton><hr/>
+        <LinkButton to={`/manage/${listingId}`} disabled={user ? user.uid != listingData.owner : true}>Manage</LinkButton><hr/>
         <LinkButton to={`/contact/${listingData.owner}`}>Inquire</LinkButton>
         <hr />
         <button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);window.alert("Copied share link!")}}>Share</button>
