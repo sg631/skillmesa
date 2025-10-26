@@ -2,10 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
 import { TabBarElement, TabContainerElement } from '../components/TabElements.jsx';
+import ShowAlert from '../components/ShowAlert.jsx'
 
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth, db } from "../firebase.js";
 import { collection, getDocs, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
+import showAlert from "../components/ShowAlert.jsx";
 
 
 
@@ -76,8 +78,26 @@ function SignonComponent({ mode = "dual", width, height }) {
             // redirect or continue
             window.location.href = "/home";
         } catch (error) {
-            alert(`Error ${error.code || ""}: ${error.message || error}`);
-            console.error(error);
+            let errorCode = error.code;
+            let errorMessage = "Unexpected Error " + error.code + ": " + error.message;
+            switch(errorCode){
+                case "auth/invalid-email":
+                    errorMessage = "Invalid email."
+                    break;
+                case "auth/email-already-in-use":
+                    errorMessage = "An account with that email already exists.";
+                    break;
+                case "auth/operation-not-allowed":
+                    errorMessage = "You may not use that sign-up method.";
+                    break;
+                case "auth/weak-password":
+                    errorMessage = "Weak password. Password must have an uppercase, lowercase, symbol, and be at least 6 characters long."
+                    break;
+                case "auth/too-many-requests":
+                    errorMessage = "Too many recent requests. Try again later."
+                    break;
+            }
+            showAlert(errorMessage)
         }
     }
     function handleLogin() {
@@ -88,9 +108,34 @@ function SignonComponent({ mode = "dual", width, height }) {
         window.location.href = "/home";
     })
     .catch((error) => {
-        const errorCode = error.code;
-        const errorMessage = error.message;
-        alert("Error " + errorCode + ": " + errorMessage);
+        let errorCode = error.code;
+        let errorMessage = "Unexpected Error " + error.code + ": " + error.message;
+        switch(errorCode){
+            case "auth/user-not-found":
+                errorMessage = "Sorry, no account found with email address.";
+                break;
+            case "auth/wrong-password":
+                errorMessage = "Incorrect password.";
+                break;
+            case "auth/invalid-email":
+                errorMessage = "Invalid email."
+                break;
+            case "auth/too-many-requests":
+                errorMessage = "Too many failed attempts. Please try again later."
+                break;
+            case "auth/invalid-credential":
+                errorMessage = "The credential is invalid. Double check the password and email."
+                break;
+            case "auth/user-disabled":
+                errorMessage = "That user has been disabled by the admin."
+                break;
+            case "auth/operation-not-allowed":
+                errorMessage = "You may not use this method of sign-on.";
+                break;
+            case "auth/invalid-login-credentials":
+                errorMessage = "Email or password is wrong. Double-check and try again.";
+        }
+        showAlert(errorMessage);
     });
     }
 

@@ -3,9 +3,10 @@ import { useParams, Link } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { LinkButton, LinkImage } from "../components/LinkElements"
+import AlertComponent from '../components/ShowAlert'
+import showAlert from "../components/ShowAlert";
 
-
-function ListingDetailPage() {
+function ManagePage() {
   const { listingId } = useParams(); // route param
   const [listingData, setListingData] = useState(null);
   const [ownerData, setOwnerData] = useState(null);
@@ -77,10 +78,10 @@ function ListingDetailPage() {
 
   return (
     <div className="listing-detail-page">
+      <title>manage listing | skillmesa</title>
       <div className="largelisting">
-        <title>view listing | skillmesa</title>
         <br /><br />
-        <h1>{listingData.title || "Untitled Listing"}</h1>
+        <textarea className="text-textarea textlarge" defaultValue={listingData.title || "Untitled Listing"}></textarea>
 
         {/* Listing images */}
         {listingData.images && listingData.images.length > 0 && (
@@ -104,7 +105,7 @@ function ListingDetailPage() {
           />
         )}
 
-        <p>{listingData.description || "No description."}</p>
+        <textarea className="text-textarea textsmall" style={{maxWidth: 'none', width: '560px', fontWeight:'400'}} defaultValue={listingData.description || "No description."} />
         <p><strong>Price:</strong> {listingData.price ? `$${listingData.price}` : "Not specified"}</p>
 
         {/* Owner info */}
@@ -125,17 +126,17 @@ function ListingDetailPage() {
         {listingData.tags.map((tag, index) => (
           <li key={index} className="listing-tag">{tag}</li>
         ))}
+        <li className="listing-tag" style={{cursor: "pointer"}} onClick={()=>{showAlert("hi")}}>+</li>
       </ul>
 
         <button disabled>Locked Resource Page (COMING SOON)</button><hr/>
-        <LinkButton to={`/manage/${listingId}`} disabled={user ? user.uid != listingData.owner : true}>Manage</LinkButton><hr/>
-        <LinkButton to={`/contact/${listingData.owner}`}>Inquire</LinkButton>
-        <hr />
         <button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);window.alert("Copied share link!")}}>Share</button>
       </div>
-      <div className="listing-detail-more-details"><p>Hello</p></div>
+      <div className="listing-detail-more-details">
+        <br/><br/><br/><button>Save</button>
+      </div>
     </div>
   );
 }
 
-export default ListingDetailPage;
+export default ManagePage;
