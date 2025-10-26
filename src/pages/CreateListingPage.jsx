@@ -36,11 +36,11 @@ function CreateListingPage() {
 
   async function handleSubmit() {
     if (!user) {
-      alert("You must be signed in to create a listing.");
+      showAlert("You must be signed in to create a listing.");
       return;
     }
     if (!title || !description) {
-      alert("Please fill out all required fields.");
+      showAlert("Please fill out all required fields.");
       return;
     }
 
@@ -89,11 +89,11 @@ function CreateListingPage() {
         });
       }
 
-      alert("✅ Listing created successfully!");
+      showAlert("✅ Listing created successfully!");
       window.location.href = "/home";
     } catch (error) {
       console.error("Error creating listing:", error);
-      alert("Failed to create listing. Check console for details.");
+      showAlert("Failed to create listing. Check console for details.");
     } finally {
       setIsSubmitting(false);
     }
