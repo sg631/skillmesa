@@ -2,10 +2,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 
 // Button that acts as a link
-function LinkButton({ to, className, children }) {
+function LinkButton({ to, className, disabled, children }) {
     return (
         <Link to={to} className='link-button'>
-            <button className={className}>
+            <button disabled={disabled} className={className}>
                 {children}
             </button>
         </Link>

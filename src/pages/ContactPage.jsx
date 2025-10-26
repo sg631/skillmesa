@@ -86,7 +86,7 @@ function ProfilePage() {
         <span className="emaildisplay">{profileData.contact.email}</span>
         <LinkButton to={"mailto:" + profileData.contact.email}>Send Email</LinkButton>
         <span className="phonenumdisplay">{profileData.contact.phone || "No attached phone number"}</span>
-        <button>Chat (COMING SOON)</button>
+        <button disabled>Chat (COMING SOON)</button>
       </div>
 
       <footer className="texttiny">

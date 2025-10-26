@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase";
+import { db, auth } from "../firebase";
 import { LinkButton, LinkImage } from "../components/LinkElements"
 
 
@@ -10,6 +10,7 @@ function ListingDetailPage() {
   const [listingData, setListingData] = useState(null);
   const [ownerData, setOwnerData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const user = auth.currentUser
 
   async function copyTextToClipboard(text) {
     try {
@@ -125,7 +126,8 @@ function ListingDetailPage() {
         ))}
       </ul>
 
-        <LinkButton to={`/profile/${listingData.owner}`}>Locked Resource Page</LinkButton><hr/>
+        <button disabled>Locked Resource Page (COMING SOON)</button><hr/>
+        <LinkButton to={`/manage/${listingId}`} disabled={user.uid != listingData.owner}>Manage</LinkButton><hr/>
         <LinkButton to={`/contact/${listingData.owner}`}>Inquire</LinkButton>
         <hr />
         <button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);window.alert("Copied share link!")}}>Share</button>

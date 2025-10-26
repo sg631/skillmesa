@@ -773,7 +773,7 @@ select option {
   border-radius: 10px;
   box-shadow: 0px 0px 5px 1px rgba(130, 130, 130, 0.5);
   font-size: 30px;
-  margin: 30px 100px 30px 100px;
+  margin: 30px 200px 30px 200px;
   display: block;
 }
 .emaildisplay::before {
@@ -785,4 +785,14 @@ select option {
   content: 'Phone number: \A';
   white-space: pre;
   font-size: 20px;
+}
+
+button:disabled{
+  cursor: not-allowed;
+  box-shadow: 0px 2px 0px rgb(204 221 243);
+  transform: none;
+}
+button:disabled:hover {
+  background-color: rgb(255, 255, 255);
+  box-shadow: 0px 2px 0px rgb(204 221 243);
 }
