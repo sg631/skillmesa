@@ -8,6 +8,8 @@ import ComingSoonPage from './pages/ComingSoonPage';
 import SignonPage from './pages/SignonPage';
 import ProfilePage from './pages/ProfilePage';
 import CreateListingPage from './pages/CreateListingPage';
+import ContactPage from './pages/ContactPage'
+import OpenSharedLinkPage from './pages/OpenSharedLinkPage'
 
 import { LinkButton } from './components/LinkElements';
 import { LinkImage } from './components/LinkElements';
@@ -76,6 +78,8 @@ function App() {
                   element={user ? <CreateListingPage /> : <Navigate to="/signon" />}
                 />
                 <Route path="/listing/:listingId" element={<ListingDetailPage />} />
+                <Route path="/contact/:userUIDparam" element={<ContactPage />} />
+                <Route path="/share/:listingId" element={<OpenSharedLinkPage />} />
                 <Route
                   path="/profile"
                   element={user ? <Navigate to={"/profile/" + user.uid} /> : <Navigate to="/signon" />}

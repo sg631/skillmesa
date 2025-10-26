@@ -13,6 +13,7 @@ function ListingComponent({ id }) {
   const [profilePicUrl, setProfilePicUrl] = useState("");
   const [tags, setTags] = useState([]);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
+  const [type, setType] = useState("")
 
   useEffect(() => {
     async function fetchListing() {
@@ -27,6 +28,7 @@ function ListingComponent({ id }) {
             setTags(data.tags || []);
             setOwnerUID(data.owner || null);
             setThumbnailUrl(data.thumbnailURL || "");
+            setType(data.type)
         } else {
             setTitle("Listing not found");
             setDescription("");
@@ -65,6 +67,7 @@ function ListingComponent({ id }) {
 
   return (
     <div className="listing">
+        <span className="listing-type-label" data-value={type}>{type}</span><hr />
       <img className="listing-thumbnail" alt="Listing thumbnail" src={thumbnailUrl}/>
       <span className="listing-title">{title}</span>
       <p className="listing-description">{description}</p>

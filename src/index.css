@@ -386,7 +386,7 @@ button:focus-visible {
 .listing {
   display: inline-block;
   width: 350px;
-  height:620px;
+  height:670px;
   background-color: white;
   border-radius: 25px;
   box-shadow: 0px 0px 15px 2px rgba(130, 130, 130, 0.5);
@@ -716,6 +716,8 @@ select option {
   height: 320px;
   object-fit: cover;
   outline: solid rgb(234, 234, 234) 3px;
+  image-rendering: optimizeQuality;
+  object-fit:fill;
 }
 
 /* account display section */
@@ -740,4 +742,47 @@ select option {
   width: calc(100% - 40px);
   max-width: none;
   margin-top: 10px;
+}
+
+.largelisting button {
+  width: 100%;
+}
+
+.listing-type-label[data-value="service"] {
+  background-color: #fffab8;
+  width: calc(100% - 10px);
+  display: block;
+  border-radius: 15px 15px 0px 0px;
+  padding: 5px;
+  font-size: 20px;
+  font-weight: 700;
+}
+.listing-type-label[data-value="class"] {
+  background-color: #b8ecff;
+  width: calc(100% - 10px);
+  display: block;
+  border-radius: 15px 15px 0px 0px;
+  padding: 5px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.emaildisplay, .phonenumdisplay {
+  background-color: white;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 0px 0px 5px 1px rgba(130, 130, 130, 0.5);
+  font-size: 30px;
+  margin: 30px 100px 30px 100px;
+  display: block;
+}
+.emaildisplay::before {
+  content: 'Email: \A';
+  white-space: pre;
+  font-size: 20px;
+}
+.phonenumdisplay::before {
+  content: 'Phone number: \A';
+  white-space: pre;
+  font-size: 20px;
 }

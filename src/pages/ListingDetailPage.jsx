@@ -2,12 +2,24 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
+import { LinkButton, LinkImage } from "../components/LinkElements"
+
 
 function ListingDetailPage() {
   const { listingId } = useParams(); // route param
   const [listingData, setListingData] = useState(null);
   const [ownerData, setOwnerData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  async function copyTextToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      console.log('Text copied to clipboard');
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  }
+
 
   useEffect(() => {
     if (!listingId) return;
@@ -113,7 +125,10 @@ function ListingDetailPage() {
         ))}
       </ul>
 
-        <Link to={`/profile/${listingData.owner}`}>Back to Owner Profile</Link>
+        <LinkButton to={`/profile/${listingData.owner}`}>Locked Resource Page</LinkButton><hr/>
+        <LinkButton to={`/contact/${listingData.owner}`}>Inquire</LinkButton>
+        <hr />
+        <button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);window.alert("Copied share link!")}}>Share</button>
       </div>
       <div className="listing-detail-more-details"><p>Hello</p></div>
     </div>
