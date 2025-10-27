@@ -165,10 +165,7 @@ function ManagePage() {
         <TabContainerElement tabIndex={activeTab}>
           <li data-display-index="0">
             {/* Long Description Editor */}
-            <TextEditor
-              initialState={longDescription}
-              onChange={()=>{setLongDescription();showAlert(longDescription)}}
-            />
+            <code>Temporarily removed long description editing</code>
             <br />
             <button onClick={handleSaveAll}>Save Info</button>
           </li>
@@ -208,12 +205,6 @@ function ManagePage() {
             </div>
           </li>
         </TabContainerElement>
-      </div>
-
-      {/* Optional: Display longDescription as HTML */}
-      <div className="listing-long-description-display">
-        <h3>Additional Info Preview:</h3>
-        <div dangerouslySetInnerHTML={{ __html: longDescription }} />
       </div>
     </div>
   );
