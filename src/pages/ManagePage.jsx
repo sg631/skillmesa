@@ -152,10 +152,11 @@ function ManagePage() {
           {listingData.tags?.map((tag, i) => (
             <li key={i} className="listing-tag">{tag}</li>
           ))}
-          <li className="listing-tag" style={{ cursor: "pointer" }} onClick={() => {tags.push(prompt("Add a tag:"))}}>+</li>
+          <li className="listing-tag" style={{ cursor: "pointer" }} onClick={(e) => {let mynewtag=prompt("Add a tag:"); tags.push(mynewtag); showAlert((<p>Added new tag: <code>{mynewtag}</code>. Save and reload to see changes.</p>))}}>+</li>
         </ul>
 
-        <LinkButton to={"/listing/" + listingId}>View</LinkButton>
+        <hr/><LinkButton to={"/listing/" + listingId}>View</LinkButton>
+        <hr/><button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);showAlert(<p>Copied share link! <br /><code>{"https://skill-mesa.web.app/share/" + listingData.id}</code></p>)}}>Share</button>
       </div>
 
       <div className="listing-detail-more-details">
@@ -199,16 +200,16 @@ function ManagePage() {
               <hr />
               <button className="fullwidth" disabled onClick={() => showAlert("Sorry, but skillmesa does not currently support additional collaborators.")}>Add Collaborators</button>
               <hr />
-              <button className="fullwidth">Change Thumbnail</button>
+              <button onClick={() => showAlert("Due to firebase handling you currently cannot change the thumbnail. Sorry, this will be updated soon.")} className="fullwidth">Change Thumbnail</button>
               <hr />
-              <button className="fullwidth">Change Type</button>
+              <button disabled className="fullwidth">Change Type</button>
               <hr />
               <h2>Dangerous Actions</h2>
               <button disabled className="textred fullwidth">Change Owner</button>
               <hr />
               <button disabled className="textred fullwidth">Archive</button>
               <hr />
-              <button className="textred fullwidth">Change Visibility</button>
+              <button className="textred fullwidth" onClick={() => showAlert("You currently cannot set listings private, we will change this very very soon.")}>Change Visibility</button>
               <hr />
               <button className="textred fullwidth">Delete</button>
               <hr />
