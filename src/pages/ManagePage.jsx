@@ -1,39 +1,35 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { useParams } from "react-router-dom";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
-import { LinkButton, LinkImage } from "../components/LinkElements"
-import AlertComponent from '../components/ShowAlert'
+import { LinkButton } from "../components/LinkElements";
 import showAlert from "../components/ShowAlert";
 import { TabBarElement, TabContainerElement } from "../components/TabElements";
 import TextEditor from "../components/TextEditor";
+import DropinImgEditor from "../components/DropinImgEditor";
 
 function ManagePage() {
-  const { listingId } = useParams(); // route param
+  const { listingId } = useParams();
   const [listingData, setListingData] = useState(null);
   const [ownerData, setOwnerData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const user = auth.currentUser
+  const [activeTab, setActiveTab] = useState(0);
 
-  async function copyTextToClipboard(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      console.log('Text copied to clipboard');
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
-  }
+  // Editable fields
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [longDescription, setLongDescription] = useState("");
 
+  const user = auth.currentUser;
 
+  // Fetch listing and owner info
   useEffect(() => {
     if (!listingId) return;
-
     let isMounted = true;
 
     async function fetchListing() {
       setLoading(true);
       try {
-        // Fetch listing
         const listingRef = doc(db, "listings", listingId);
         const listingSnap = await getDoc(listingRef);
 
@@ -43,9 +39,14 @@ function ManagePage() {
         }
 
         const listing = { id: listingSnap.id, ...listingSnap.data() };
-        if (isMounted) setListingData(listing);
+        if (isMounted) {
+          setListingData(listing);
+          setTitle(listing.title || "");
+          setDescription(listing.description || "");
+          setLongDescription(listing.longDescription || "");
+        }
 
-        // Fetch owner info (users/{ownerUID})
+        // Fetch owner info
         if (listing.owner) {
           const ownerRef = doc(db, "users", listing.owner);
           const ownerSnap = await getDoc(ownerRef);
@@ -67,10 +68,26 @@ function ManagePage() {
     }
 
     fetchListing();
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [listingId]);
+
+  const handleSaveAll = async () => {
+    try {
+      await setDoc(
+        doc(db, "listings", listingId),
+        {
+          title,
+          description,
+          longDescription
+        },
+        { merge: true }
+      );
+      showAlert("Listing saved successfully!");
+    } catch (err) {
+      console.error("Failed to save listing:", err);
+      showAlert("Failed to save listing.");
+    }
+  };
 
   if (loading) return <p>Loading listing...</p>;
   if (!listingData) return <p>Listing not found.</p>;
@@ -80,25 +97,24 @@ function ManagePage() {
 
   return (
     <div className="listing-detail-page">
-      <title>manage listing | skillmesa</title>
+      <title>Manage Listing | SkillMesa</title>
       <div className="largelisting">
-        <br /><br />
-        <textarea className="text-textarea textlarge" defaultValue={listingData.title || "Untitled Listing"}></textarea>
+        {/* Editable Title */}
+        <textarea
+          className="text-textarea textlarge"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
 
         {/* Listing images */}
-        {listingData.images && listingData.images.length > 0 && (
+        {listingData.images?.length > 0 && (
           <div>
-            {listingData.images.map((img, index) => (
-              <img
-                key={index}
-                src={img.currentUrl || img.url}
-                alt={`Listing Image ${index + 1}`}
-              />
+            {listingData.images.map((img, i) => (
+              <img key={i} src={img.currentUrl || img.url} alt={`Listing ${i + 1}`} />
             ))}
           </div>
         )}
 
-        {/* Thumbnail */}
         {listingData.thumbnailURL && (
           <img
             className="listing-thumbnail"
@@ -107,7 +123,14 @@ function ManagePage() {
           />
         )}
 
-        <textarea className="text-textarea textsmall" style={{maxWidth: 'none', width: '560px', fontWeight:'400'}} defaultValue={listingData.description || "No description."} />
+        {/* Editable Description */}
+        <textarea
+          className="text-textarea textsmall"
+          style={{ maxWidth: "none", width: "560px", fontWeight: "400" }}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+
         <p><strong>Price:</strong> {listingData.price ? `$${listingData.price}` : "Not specified"}</p>
 
         {/* Owner info */}
@@ -116,34 +139,81 @@ function ManagePage() {
           onClick={() => (window.location = "/profile/" + listingData.owner)}
           style={{ cursor: "pointer" }}
         >
-          <img
-            className="accdisplay-profilepic"
-            src={profilePicUrl}
-            alt="Owner profile"
-          />
+          <img className="accdisplay-profilepic" src={profilePicUrl} alt="Owner" />
           <span className="accdisplay-text">{ownerName}</span>
         </div>
 
         <ul className="listing-tags-container">
-        {listingData.tags.map((tag, index) => (
-          <li key={index} className="listing-tag">{tag}</li>
-        ))}
-        <li className="listing-tag" style={{cursor: "pointer"}} onClick={()=>{showAlert("hi")}}>+</li>
-      </ul>
+          {listingData.tags?.map((tag, i) => (
+            <li key={i} className="listing-tag">{tag}</li>
+          ))}
+          <li className="listing-tag" style={{ cursor: "pointer" }} onClick={() => showAlert("Add tag")}>+</li>
+        </ul>
 
-        <button disabled>Locked Resource Page (COMING SOON)</button><hr/>
-        <button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);showAlert(<p>Copied share link! <br /><code>{"https://skill-mesa.web.app/share/" + listingData.id}</code></p>)}}>Share</button>
+        <LinkButton to={"/listing/" + listingId}>View</LinkButton>
       </div>
+
       <div className="listing-detail-more-details">
-        <br/><br/><br/>
         <TabBarElement>
-          <li>Attached Info</li><li>Images</li><li>Filerobot Editor</li><li>Files</li><li>Manage</li>
+          <li onClick={() => setActiveTab(0)}>Attached Info</li>
+          <li onClick={() => setActiveTab(1)}>Images</li>
+          <li onClick={() => setActiveTab(2)}>Filerobot Editor</li>
+          <li onClick={() => setActiveTab(3)}>Files</li>
+          <li onClick={() => setActiveTab(4)}>Manage</li>
         </TabBarElement>
-        <TabContainerElement>
-          <li>
-            <TextEditor></TextEditor>
+
+        <TabContainerElement tabIndex={activeTab}>
+          <li data-display-index="0">
+            {/* Long Description Editor */}
+            <TextEditor
+              initialState={longDescription}
+              onChange={()=>{setLongDescription();showAlert(longDescription)}}
+            />
+            <br />
+            <button onClick={handleSaveAll}>Save Info</button>
+          </li>
+
+          <li data-display-index="1">
+            <input type="file" />
+          </li>
+
+          <li data-display-index="2">
+            <DropinImgEditor />
+          </li>
+
+          <li data-display-index="3">
+            <p>Coming soon...</p>
+          </li>
+
+          <li data-display-index="4">
+            <div className="controls" style={{ width: "100%", height: "700px" }}>
+              <h1>Actions</h1>
+              <button className="fullwidth" onClick={handleSaveAll}>Save</button>
+              <hr />
+              <button className="fullwidth">Add Collaborators</button>
+              <hr />
+              <button className="fullwidth">Change Thumbnail</button>
+              <hr />
+              <button className="fullwidth">Change Type</button>
+              <hr />
+              <h2>Dangerous Actions</h2>
+              <button className="textred fullwidth">Change Owner</button>
+              <hr />
+              <button className="textred fullwidth">Archive</button>
+              <hr />
+              <button className="textred fullwidth">Change Visibility</button>
+              <hr />
+              <button className="textred fullwidth">Delete</button>
+              <hr />
+            </div>
           </li>
         </TabContainerElement>
+      </div>
+
+      {/* Optional: Display longDescription as HTML */}
+      <div className="listing-long-description-display">
+        <h3>Additional Info Preview:</h3>
+        <div dangerouslySetInnerHTML={{ __html: longDescription }} />
       </div>
     </div>
   );
