@@ -154,6 +154,7 @@ function ManagePage() {
       </div>
 
       <div className="listing-detail-more-details">
+        <br/><br/><br/>
         <TabBarElement>
           <li onClick={() => setActiveTab(0)}>Attached Info</li>
           <li onClick={() => setActiveTab(1)}>Images</li>
@@ -167,7 +168,6 @@ function ManagePage() {
             {/* Long Description Editor */}
             <code>Temporarily removed long description editing</code>
             <br />
-            <button onClick={handleSaveAll}>Save Info</button>
           </li>
 
           <li data-display-index="1">
