@@ -907,3 +907,7 @@ a:has(span[data-lexical-text=true]):hover::before{
   position: absolute;
   margin-top: 20px;
 }
+
+:disabled.textred {
+  color: rgb(244, 188, 188)
+}

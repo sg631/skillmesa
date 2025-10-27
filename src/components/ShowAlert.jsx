@@ -40,7 +40,7 @@ function Alert({ message, children, onClose }) {
   );
 }
 
-export default function showAlert(message, children = null) {
+export default function showAlert(message, children = null,) {
   return new Promise((resolve) => {
     const container = document.createElement("div");
     document.body.appendChild(container);

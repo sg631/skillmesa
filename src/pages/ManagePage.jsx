@@ -14,11 +14,12 @@ function ManagePage() {
   const [ownerData, setOwnerData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [thumbnailURL, setThumbnailUrl] = useState("");
 
   // Editable fields
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [longDescription, setLongDescription] = useState("");
+  const [tags, setTags] = useState([]);
 
   const user = auth.currentUser;
 
@@ -43,7 +44,9 @@ function ManagePage() {
           setListingData(listing);
           setTitle(listing.title || "");
           setDescription(listing.description || "");
-          setLongDescription(listing.longDescription || "");
+          setTags(listing.tags || []);
+          setThumbnailUrl(listing.thumbnailURL)
+          console.log(thumbnailURL)
         }
 
         // Fetch owner info
@@ -78,7 +81,8 @@ function ManagePage() {
         {
           title,
           description,
-          longDescription
+          thumbnailURL,
+          tags
         },
         { merge: true }
       );
@@ -97,9 +101,10 @@ function ManagePage() {
 
   return (
     <div className="listing-detail-page">
-      <title>Manage Listing | SkillMesa</title>
+      <title>manage | skillmesa</title>
       <div className="largelisting">
         {/* Editable Title */}
+        <br/><br/><br/>
         <textarea
           className="text-textarea textlarge"
           value={title}
@@ -147,7 +152,7 @@ function ManagePage() {
           {listingData.tags?.map((tag, i) => (
             <li key={i} className="listing-tag">{tag}</li>
           ))}
-          <li className="listing-tag" style={{ cursor: "pointer" }} onClick={() => showAlert("Add tag")}>+</li>
+          <li className="listing-tag" style={{ cursor: "pointer" }} onClick={() => {tags.push(prompt("Add a tag:"))}}>+</li>
         </ul>
 
         <LinkButton to={"/listing/" + listingId}>View</LinkButton>
@@ -166,20 +171,25 @@ function ManagePage() {
         <TabContainerElement tabIndex={activeTab}>
           <li data-display-index="0">
             {/* Long Description Editor */}
-            <code>Temporarily removed long description editing</code>
+            <h1>We apologize for the inconvenience</h1>
+            <code>Temporarily removed extra info panel</code>
             <br />
           </li>
 
           <li data-display-index="1">
-            <input type="file" />
+            <h1>We apologize for the inconvenience</h1>
+            <p><code>Temporarily removed image addition.</code> For thumbnail modification, visit the "Manage" tab.</p>
           </li>
 
           <li data-display-index="2">
+            <h1>Image editor</h1>
+            <p>Warning, it is currently extremely expirimental and may not function as expected whatsoever. You have to use the save functionality for now, you cannot directly upload to images from the editor.</p>
             <DropinImgEditor />
           </li>
 
           <li data-display-index="3">
-            <p>Coming soon...</p>
+            <h1>Sharing files is coming soon</h1>
+            <p>Use other methods of sharing files with collaborators or participants for now.</p>
           </li>
 
           <li data-display-index="4">
@@ -187,16 +197,16 @@ function ManagePage() {
               <h1>Actions</h1>
               <button className="fullwidth" onClick={handleSaveAll}>Save</button>
               <hr />
-              <button className="fullwidth">Add Collaborators</button>
+              <button className="fullwidth" disabled onClick={() => showAlert("Sorry, but skillmesa does not currently support additional collaborators.")}>Add Collaborators</button>
               <hr />
               <button className="fullwidth">Change Thumbnail</button>
               <hr />
               <button className="fullwidth">Change Type</button>
               <hr />
               <h2>Dangerous Actions</h2>
-              <button className="textred fullwidth">Change Owner</button>
+              <button disabled className="textred fullwidth">Change Owner</button>
               <hr />
-              <button className="textred fullwidth">Archive</button>
+              <button disabled className="textred fullwidth">Archive</button>
               <hr />
               <button className="textred fullwidth">Change Visibility</button>
               <hr />
