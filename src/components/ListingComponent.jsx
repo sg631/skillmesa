@@ -93,8 +93,8 @@ function ListingComponent({ id }) {
           View Listing
         </LinkButton>
         <hr />
-        <LinkButton to={`/editlisting/${id}`} className="fullwidth">
-          Edit Listing
+        <LinkButton to={`/manage/${id}`} className="fullwidth">
+          Manage Listing
         </LinkButton>
       </div>
     </div>
