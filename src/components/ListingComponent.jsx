@@ -14,6 +14,8 @@ function ListingComponent({ id }) {
   const [tags, setTags] = useState([]);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [type, setType] = useState("")
+  const [online, setOnline] = useState("")
+  const [zipCode, setZipCode] = useState("")
 
   useEffect(() => {
     async function fetchListing() {
@@ -28,7 +30,9 @@ function ListingComponent({ id }) {
             setTags(data.tags || []);
             setOwnerUID(data.owner || null);
             setThumbnailUrl(data.thumbnailURL || "");
-            setType(data.type)
+            setType(data.type);
+            setOnline(data.online)
+            setZipCode(data.zipCode)
         } else {
             setTitle("Listing not found");
             setDescription("");
@@ -67,7 +71,10 @@ function ListingComponent({ id }) {
 
   return (
     <div className="listing">
-        <span className="listing-type-label" data-value={type}>{type}</span><hr />
+        <span className="listing-type-label" data-value={type}>{type}</span>
+        <span className="listing-online-label" data-value={online}>{online}</span>
+        <span className="listing-zip-label" data-value={zipCode}><code>{zipCode}</code></span>
+        <hr />
       <img className="listing-thumbnail" alt="Listing thumbnail" src={thumbnailUrl}/>
       <span className="listing-title">{title}</span>
       <p className="listing-description">{description}</p>
@@ -78,7 +85,7 @@ function ListingComponent({ id }) {
         ))}
       </ul>
 
-      <div className="controls">
+      <div className="controls-acc">
         <div className="accdisplay" onClick={() => window.location = "/profile/" + ownerUID}>
           <img
             className="accdisplay-profilepic"

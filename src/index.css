@@ -386,7 +386,7 @@ button:focus-visible {
 .listing {
   display: inline-block;
   width: 350px;
-  height:670px;
+  height:765px;
   background-color: white;
   border-radius: 25px;
   box-shadow: 0px 0px 15px 2px rgba(130, 130, 130, 0.5);
@@ -430,7 +430,7 @@ button:focus-visible {
   border-bottom: solid rgba(208, 208, 208, 0.5) 3px;
   line-height: 50px;
 }
-.controls {
+.controls-acc {
   width: 350px;
   height: 150px;
   display:block;
@@ -910,4 +910,35 @@ a:has(span[data-lexical-text=true]):hover::before{
 
 :disabled.textred {
   color: rgb(244, 188, 188)
+}
+
+.listing-online-label[data-value="online"] {
+  background-color: #c7bcff;
+  width: calc(100% - 10px);
+  display: block;
+  border-radius: 0px;
+  margin-top: 5px;
+  padding: 5px;
+  font-size: 20px;
+  font-weight: 700;
+}
+.listing-online-label[data-value="in-person"] {
+  background-color: #d7ffb8;
+  width: calc(100% - 10px);
+  display: block;
+  margin-top: 5px;
+  border-radius: 0px;
+  padding: 5px;
+  font-size: 20px;
+  font-weight: 700;
+}
+.listing-zip-label {
+  background-color: #e5e5e5;
+  width: calc(100% - 10px);
+  display: block;
+  margin-top: 5px;
+  border-radius: 0px;
+  padding: 5px;
+  font-size: 20px;
+  font-weight: 700;
 }

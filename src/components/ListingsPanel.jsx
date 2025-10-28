@@ -77,7 +77,7 @@ function ListingsPanel({
   return (
     <div
       className="listings-panel-wrapper"
-      style={{ height: "800px", overflow: "hidden", position: "relative" }}
+      style={{ height: "900px", overflow: "hidden", position: "relative" }}
     >
       <div className={className} style={{ height: "100%", position: "relative" }}>
         <div

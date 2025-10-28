@@ -11,6 +11,8 @@ import CreateListingPage from './pages/CreateListingPage';
 import ContactPage from './pages/ContactPage'
 import OpenSharedLinkPage from './pages/OpenSharedLinkPage'
 import ManagePage from './pages/ManagePage'
+import ExplorePage from './pages/ExplorePage.jsx';
+import ListingDetailPage from './pages/ListingDetailPage.jsx';
 
 import { LinkButton } from './components/LinkElements';
 import { LinkImage } from './components/LinkElements';
@@ -19,7 +21,6 @@ import PageTransition from './components/PageTransition';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, getDocs } from 'firebase/firestore';
 import { auth } from "./firebase.js";
-import ListingDetailPage from './pages/ListingDetailPage.jsx';
 
 
 function App() {
@@ -39,7 +40,7 @@ function App() {
           <LinkImage to="/" src="/assets/logos/skillmesa.svg" width={100} height={100} alt="Skillmesa Logo" />
           <Link to="/home">home</Link>
           <Link to="/comingsoon">dashboard</Link>
-          <Link to="/comingsoon">explore</Link>
+          <Link to="/explore">explore</Link>
           <Link to="/comingsoon">opportunities</Link>
           {user ? (
             <LinkImage to="/profile" src={user.photoURL} width={40} height={40} alt="User Profile" classes="navbutton-profile navbutton-profile-loggedin" />
@@ -74,6 +75,7 @@ function App() {
                 <Route path="/profile/:userUIDparam" element={<ProfilePage />} />
                 <Route path="/notifications" element={<ComingSoonPage />} />
                 <Route path="/settings" element={<ComingSoonPage />} />
+                <Route path="/explore" element={<ExplorePage />} />
                 <Route
                   path="/create"
                   element={user ? <CreateListingPage /> : <Navigate to="/signon" />}

@@ -7,6 +7,7 @@ import showAlert from "../components/ShowAlert";
 import { TabBarElement, TabContainerElement } from "../components/TabElements";
 import TextEditor from "../components/TextEditor";
 import DropinImgEditor from "../components/DropinImgEditor";
+import WhiteboardComponent from "../components/WhiteboardComponent";
 
 function ManagePage() {
   const { listingId } = useParams();
@@ -15,6 +16,8 @@ function ManagePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [thumbnailURL, setThumbnailUrl] = useState("");
+  const [price, setPrice] = useState("")
+  const [zipCode, setZipCode] = useState("")
 
   // Editable fields
   const [title, setTitle] = useState("");
@@ -45,7 +48,9 @@ function ManagePage() {
           setTitle(listing.title || "");
           setDescription(listing.description || "");
           setTags(listing.tags || []);
-          setThumbnailUrl(listing.thumbnailURL)
+          setThumbnailUrl(listing.thumbnailURL || "")
+          setPrice(listing.price || "");
+          setZipCode(listing.zipCode || "")
           console.log(thumbnailURL)
         }
 
@@ -82,7 +87,9 @@ function ManagePage() {
           title,
           description,
           thumbnailURL,
-          tags
+          tags,
+          price:parseFloat(price.replace(/[^0-9.]/g, '')).toFixed(2),
+          zipCode
         },
         { merge: true }
       );
@@ -136,7 +143,21 @@ function ManagePage() {
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        <p><strong>Price:</strong> {listingData.price ? `$${listingData.price}` : "Not specified"}</p>
+        <p><strong>Price: </strong><br/><textarea
+          className="text-textarea textsmall"
+          style={{ maxWidth: "none", height:'30px', width: "560px", fontWeight: "400" }}
+          value={price}
+          placeholder="Type price in USD in format '3.65', no dollar sign!"
+          onChange={(e) => setPrice(e.target.value)}
+        /></p>
+
+        <p><strong>Zip Code: </strong><br/><textarea
+          className="text-textarea textsmall"
+          style={{ maxWidth: "none", height:'30px', width: "560px", fontWeight: "400" }}
+          value={zipCode}
+          placeholder="Zip code as integer: e.g. '95630'"
+          onChange={(e) => setZipCode(e.target.value)}
+        /></p>
 
         {/* Owner info */}
         <div
@@ -164,7 +185,7 @@ function ManagePage() {
         <TabBarElement>
           <li onClick={() => setActiveTab(0)}>Attached Info</li>
           <li onClick={() => setActiveTab(1)}>Images</li>
-          <li onClick={() => setActiveTab(2)}>Filerobot Editor</li>
+          <li onClick={() => setActiveTab(2)}>Excalidraw Editor</li>
           <li onClick={() => setActiveTab(3)}>Files</li>
           <li onClick={() => setActiveTab(4)}>Manage</li>
         </TabBarElement>
@@ -184,8 +205,8 @@ function ManagePage() {
 
           <li data-display-index="2">
             <h1>Image editor</h1>
-            <p>Warning, it is currently extremely expirimental and may not function as expected whatsoever. You have to use the save functionality for now, you cannot directly upload to images from the editor.</p>
-            <DropinImgEditor />
+            <p>Warning, it is currently expirimental and may not function as expected. You have to use the save functionality for now, you cannot directly upload to images from the editor.</p>
+            <WhiteboardComponent />
           </li>
 
           <li data-display-index="3">
@@ -194,7 +215,7 @@ function ManagePage() {
           </li>
 
           <li data-display-index="4">
-            <div className="controls" style={{ width: "100%", height: "700px" }}>
+            <div className="controls-acc" style={{ width: "100%", height: "700px" }}>
               <h1>Actions</h1>
               <button className="fullwidth" onClick={handleSaveAll}>Save</button>
               <hr />
@@ -211,7 +232,7 @@ function ManagePage() {
               <hr />
               <button className="textred fullwidth" onClick={() => showAlert("You currently cannot set listings private, we will change this very very soon.")}>Change Visibility</button>
               <hr />
-              <button className="textred fullwidth">Delete</button>
+              <button className="textred fullwidth" onClick={() => showAlert("Marked for deletion")}>Delete</button>
               <hr />
             </div>
           </li>

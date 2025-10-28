@@ -105,8 +105,11 @@ function ListingDetailPage() {
         )}
 
         <p>{listingData.description || "No description."}</p>
-        <p><strong>Price:</strong> {listingData.price ? `$${listingData.price}` : "Not specified"}</p>
-
+        <p><strong>Price:</strong> {listingData.price ? `$${parseFloat(listingData.price).toFixed(2)}` : "Not specified"}</p>
+        <p><strong>Zip Code:</strong> <code>{listingData.zipCode ? listingData.zipCode : "Not specified"}</code></p>
+        <p><strong>Category:</strong> <code>{listingData.category ? listingData.category : "Not specified"}</code></p>
+        <p><strong>Type:</strong> <code>{listingData.type ? listingData.type : "Not specified"}</code></p>
+        <p><strong>Online: </strong> {listingData.type ? (<>{listingData.type == "online" ? "No" : "Yes"}</>) : "Not specified"}</p>
         {/* Owner info */}
         <div
           className="accdisplay"
@@ -133,8 +136,9 @@ function ListingDetailPage() {
         <hr />
         <button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);showAlert(<p>Copied share link! <br /><code>{"https://skill-mesa.web.app/share/" + listingData.id}</code></p>)}}>Share</button>
       </div>
-      <div className="listing-detail-more-details"><p>Hello</p></div>
-    </div>
+      <div className="listing-detail-more-details"><br/><br/><br/><h1>We apologize for the inconvenience</h1>
+            <code>Temporarily removed extra info panel</code></div>
+      </div>
   );
 }
 

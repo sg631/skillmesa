@@ -18,6 +18,8 @@ function CreateListingPage() {
     const [type, setType] = React.useState("class");
     const [isSubmitting, setIsSubmitting] = React.useState(false);
     const [online, setOnline] = React.useState(true);
+    const [price, setPrice] = React.useState("");
+    const [zipCode, setZipCode] = React.useState("")
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
@@ -66,6 +68,8 @@ function CreateListingPage() {
         editors: [],
         thumbnailURL: "", // placeholder
         createdAt: new Date().toISOString(),
+        price:parseFloat(price).toFixed(2),
+        zipCode
       });
 
       let imageURL = "";
@@ -124,6 +128,21 @@ function CreateListingPage() {
         value={tags}
         onChange={(e) => setTags(e.target.value)}
       /><br /><br />
+
+      <input
+        type="number"
+        className="priceinput"
+        placeholder="Price (decimal in USD), 0 for free"
+        value={price}
+        onChange={(e) => setPrice(e.target.value)}
+      /><br/><br/>
+
+      <input
+        type="text"
+        placeholder="ZIP Code"
+        value={zipCode}
+        onChange={(e) => setZipCode(e.target.value)}
+      /><br/><br/>
 
       <select value={category} onChange={(e) => setCategory(e.target.value)}>
         <option value="coding">Coding</option>

@@ -39,7 +39,7 @@ function StartingPage() {
         or more, Skillmesa is your platform to connect and thrive.
         <br /><br /><br /><br />
         <span className='textmedium'>
-          Join us in building a community where skills are shared, opportunities are created, and knowledge is plentiful
+          From babysitting to garden tending, and from homework help to SAT prep, we're here.
         </span>
       </p>
 
