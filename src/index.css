@@ -942,3 +942,18 @@ a:has(span[data-lexical-text=true]):hover::before{
   font-size: 20px;
   font-weight: 700;
 }
+
+.search-filter-panel {
+  background: white;
+  border-radius: 15px;
+  display: inline-block;
+  border: none;
+  box-shadow: 0px 0px 8px 1px rgba(130, 130, 130, 0.251);
+  width: 500px;
+  min-height: 80px;
+  scale: 0.9;
+}
+
+.search-filter-panel input {
+  margin-top: 15px;
+}
