@@ -47,8 +47,8 @@ function App() {
           ) : (
             <LinkImage to="/signon" src="/assets/icons/account2.svg" width={40} height={40} alt="Sign In" className="navbutton-profile navbutton-profile-loggedout" />
           )}
-          {/* {<LinkImage to="/notifications" src="/assets/icons/notifications.svg" width={30} height={30} alt="Notifications" />
-          <LinkImage to="/settings" src="/assets/icons/settings.svg" width={30} height={30} alt="Settings" />} */}
+          <LinkImage to="/notifications" src="/assets/icons/notifications.svg" width={30} height={30} alt="Notifications" />
+          <LinkImage to="/settings" src="/assets/icons/settings.svg" width={30} height={30} alt="Settings" />
         </nav>
 
         <div className="blobs">
