@@ -152,12 +152,19 @@ function CreateListingPage() {
         <label>
           Category *
           <select required value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="coding">Coding</option>
-            <option value="design">Design</option>
-            <option value="writing">Writing</option>
+            <option value="coding">Coding and Development</option>
             <option value="music">Music</option>
             <option value="math">Math</option>
-            <option value="business">Business</option>
+            <option value="art">Art</option>
+            <option value="language">Language</option>
+            <option value="design">Design</option>
+            <option value="writing">Writing and Editing</option>
+            <option value="business">Business and Marketing</option>
+            <option value="home-services">Home and Personal Services</option>
+            <option value="health">Health, Fitness and Wellness</option>
+            <option value="tutoring">General Tutoring</option>
+            <option value="education">Class (Not encompassed by other options)</option>
+            <option value="volunteering">Volunteering Opportunity</option>
             <option value="other">Other</option>
           </select>
         </label>
