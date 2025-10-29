@@ -957,3 +957,6 @@ a:has(span[data-lexical-text=true]):hover::before{
 .search-filter-panel input {
   margin-top: 15px;
 }
+.panel {
+  max-height: 850px;
+}
