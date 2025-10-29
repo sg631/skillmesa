@@ -88,7 +88,7 @@ function ManagePage() {
           description,
           thumbnailURL,
           tags,
-          price:parseFloat(price.replace(/[^0-9.]/g, '')).toFixed(2),
+          price:Number(parseFloat(price.replace(/[^0-9.]/g, '')).toFixed(2)),
           zipCode
         },
         { merge: true }
