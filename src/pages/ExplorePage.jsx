@@ -3,12 +3,6 @@ import ListingsPanel from '../components/ListingsPanel.jsx';
 import { db } from '../firebase';
 import { collection, query, where } from 'firebase/firestore';
 
-/*
-    useExploreSearch: builds a Firestore query (with a lightweight title-prefix fallback)
-    and a client-side postFilter for loose substring matching across title/description/tags.
-    The earlier duplicate implementation was removed to avoid redeclaration and import conflicts.
-*/
-
 function useExploreSearch(listingsColl) {
     // UI form state (what the user is editing)
     const [searchInput, setSearchInput] = React.useState('');
@@ -255,10 +249,9 @@ function ExplorePage() {
                         placeholder='Search (keywords, title, description)'
                         style={{ minHeight: '20px', borderTopRightRadius: '0', borderBottomRightRadius: '0' }}
                         value={explore.searchInput}
-                        disabled
                         onChange={e => explore.setSearchInput(e.target.value)}
                     />
-                    <button disabled type="submit" style={{ borderBottomLeftRadius: '0', borderTopLeftRadius: '0' }}>Search</button>
+                    <button type="submit" style={{ borderBottomLeftRadius: '0', borderTopLeftRadius: '0' }}>Search</button>
                     <br /><br />
 
                     <span className="textmedium">Location</span><br />
