@@ -16,3 +16,7 @@
 excalidrawWrapper button:hover {
     box-shadow: none;
 }
+
+.excalidrawWrapper {
+    display:inline-block
+}

@@ -203,6 +203,7 @@ function CreateListingPage() {
         )}
         <br /><br />
         <WhiteboardComponent />
+        <br/><br/>
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Submitting..." : "Submit Listing"}
         </button>
