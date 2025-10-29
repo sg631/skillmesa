@@ -136,7 +136,7 @@ function CreateListingPage() {
           required
           type="number"
           className="priceinput"
-          placeholder="Price (decimal in USD), 0 for free *"
+          placeholder="Price in USD IN SPECIFIC FORMAT $0.38 -> '0.38' *"
           value={price}
           onChange={(e) => setPrice(e.target.value)}
         /><br/><br/>
