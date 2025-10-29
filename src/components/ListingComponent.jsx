@@ -107,7 +107,7 @@ function ListingComponent({ id }) {
           View Listing
         </LinkButton>
         <hr />
-        <LinkButton disabled={user ? (user.uid == ownerUID ? false : true) : false} to={`/manage/${id}`} className="fullwidth">
+        <LinkButton disabled={user ? (user.uid == ownerUID ? false : true) : true} to={`/manage/${id}`} className="fullwidth">
           Manage Listing
         </LinkButton>
       </div>
