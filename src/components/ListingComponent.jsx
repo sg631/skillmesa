@@ -71,10 +71,15 @@ function ListingComponent({ id }) {
 
   return (
     <div className="listing">
-        <span className="listing-type-label" data-value={type}>{type}</span>
-        <span className="listing-online-label" data-value={online}>{online}</span>
-        <span className="listing-zip-label" data-value={zipCode}><code>{zipCode}</code></span>
-        <hr />
+      <span className="listing-type-label" data-value={type}>{type}</span>
+      <span
+        className="listing-online-label"
+        data-value={online ? "online" : "in-person"}
+      >
+        {online ? "online" : "in-person"}
+      </span>
+      <span className="listing-zip-label" data-value={zipCode}><code>{zipCode}</code></span>
+      <hr />
       <img className="listing-thumbnail" alt="Listing thumbnail" src={thumbnailUrl}/>
       <span className="listing-title">{title}</span>
       <p className="listing-description">{description}</p>
