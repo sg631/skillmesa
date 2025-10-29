@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { db } from "../firebase";
+import { auth, db } from "../firebase";
 import { collection, doc, getDoc } from "firebase/firestore";
 import { LinkButton } from "./LinkElements.jsx";
+
+const user = auth.currentUser
 
 function ListingComponent({ id }) {
   const listings = collection(db, "listings");
@@ -105,7 +107,7 @@ function ListingComponent({ id }) {
           View Listing
         </LinkButton>
         <hr />
-        <LinkButton to={`/manage/${id}`} className="fullwidth">
+        <LinkButton disabled={user ? (user.uid == ownerUID ? false : true) : false} to={`/manage/${id}`} className="fullwidth">
           Manage Listing
         </LinkButton>
       </div>

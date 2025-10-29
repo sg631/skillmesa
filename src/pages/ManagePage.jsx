@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Navigate } from "react-router-dom";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { LinkButton } from "../components/LinkElements";
@@ -106,6 +106,8 @@ function ManagePage() {
   const ownerName = ownerData?.displayName || "Unknown User";
   const profilePicUrl = ownerData?.profilePic?.currentUrl || "/assets/account1.svg";
 
+  if (listingData.owner != user.uid) return (<Navigate to={"/listing/" + listingId}></Navigate>)
+  
   return (
     <div className="listing-detail-page">
       <title>manage | skillmesa</title>
