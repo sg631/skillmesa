@@ -3,8 +3,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db, storage } from "../firebase";
 import { collection, addDoc, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import DropinImgEditor from '../components/DropinImgEditor';
 import showAlert from '../components/ShowAlert';
+import WhiteboardComponent from '../components/WhiteboardComponent';
 
 function CreateListingPage() {
   const [user, setUser] = React.useState(null);
@@ -190,10 +190,9 @@ function CreateListingPage() {
 
         <h2>Upload Thumbnail *</h2>
         <p>
-          You can use the Filerobot image editor if you wish to create <br /> a thumbnail right away. You have to still download the picture and <br />upload it as a thumbnail. It is currently highly experimental and may not <br />function as intended.
+          <strong>Reccomended aspect ratio is 7:4, but thumbnail resolution is 350x200.</strong><br/>We reccomend Excalidraw or Canva for creating a thumbnail. <br/>Embedded below is an expirimental interface with Excalidraw. We reccomend using it on its official page, but if not you can use it below.
         </p>
         <input required type="file" accept="image/*" onChange={handleImageSelect} /><br /><br />
-        <DropinImgEditor />
         <br /><br />
         {previewUrl && (
           <img
@@ -203,6 +202,7 @@ function CreateListingPage() {
           />
         )}
         <br /><br />
+        <WhiteboardComponent />
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Submitting..." : "Submit Listing"}
         </button>
