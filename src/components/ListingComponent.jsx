@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 import { collection, doc, getDoc } from "firebase/firestore";
 import { LinkButton } from "./LinkElements.jsx";
-
-const user = auth.currentUser
 
 function ListingComponent({ id }) {
   const listings = collection(db, "listings");
 
+  const [currentUser, setCurrentUser] = useState(null);
   const [title, setTitle] = useState("Loading...");
   const [description, setDescription] = useState("Loading...");
   const [ownerUID, setOwnerUID] = useState(null);
@@ -15,9 +15,16 @@ function ListingComponent({ id }) {
   const [profilePicUrl, setProfilePicUrl] = useState("");
   const [tags, setTags] = useState([]);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
-  const [type, setType] = useState("")
-  const [online, setOnline] = useState("")
-  const [zipCode, setZipCode] = useState("")
+  const [type, setType] = useState("");
+  const [online, setOnline] = useState("");
+  const [zipCode, setZipCode] = useState("");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      setCurrentUser(u);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     async function fetchListing() {
@@ -26,19 +33,19 @@ function ListingComponent({ id }) {
         const listingSnap = await getDoc(listingDoc);
 
         if (listingSnap.exists()) {
-            const data = listingSnap.data();
-            setTitle(data.title);
-            setDescription(data.description);
-            setTags(data.tags || []);
-            setOwnerUID(data.owner || null);
-            setThumbnailUrl(data.thumbnailURL || "");
-            setType(data.type);
-            setOnline(data.online)
-            setZipCode(data.zipCode)
+          const data = listingSnap.data();
+          setTitle(data.title);
+          setDescription(data.description);
+          setTags(data.tags || []);
+          setOwnerUID(data.owner || null);
+          setThumbnailUrl(data.thumbnailURL || "");
+          setType(data.type);
+          setOnline(data.online);
+          setZipCode(data.zipCode);
         } else {
-            setTitle("Listing not found");
-            setDescription("");
-            setTags([]);
+          setTitle("Listing not found");
+          setDescription("");
+          setTags([]);
         }
       } catch (error) {
         console.error("Error fetching listing:", error);
@@ -70,6 +77,8 @@ function ListingComponent({ id }) {
 
     fetchOwnerData();
   }, [ownerUID]);
+
+  const isOwner = Boolean(currentUser && ownerUID && currentUser.uid === ownerUID);
 
   return (
     <div className="listing">
@@ -107,7 +116,7 @@ function ListingComponent({ id }) {
           View Listing
         </LinkButton>
         <hr />
-        <LinkButton disabled={user ? (user.uid == ownerUID ? false : true) : true} to={`/manage/${id}`} className="fullwidth">
+        <LinkButton disabled={!isOwner} to={`/manage/${id}`} className="fullwidth">
           Manage Listing
         </LinkButton>
       </div>
