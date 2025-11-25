@@ -234,7 +234,16 @@ function ManagePage() {
               <hr />
               <button className="textred fullwidth" onClick={() => showAlert("You currently cannot set listings private, we will change this very very soon.")}>Change Visibility</button>
               <hr />
-              <button className="textred fullwidth" onClick={() => deleteDoc(listingRef)}>Delete</button>
+              <button className="textred fullwidth" onClick={async () => {
+                try {
+                  await deleteDoc(doc(db, "listings", listingId));
+                  showAlert("Listing deleted.");
+                  window.location = "/";
+                } catch (err) {
+                  console.error("Failed to delete listing:", err);
+                  showAlert("Failed to delete listing.");
+                }
+              }}>Delete</button>
               <hr />
             </div>
           </li>
