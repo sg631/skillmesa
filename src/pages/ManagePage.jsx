@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Navigate } from "react-router-dom";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { LinkButton } from "../components/LinkElements";
 import showAlert from "../components/ShowAlert";
@@ -234,7 +234,7 @@ function ManagePage() {
               <hr />
               <button className="textred fullwidth" onClick={() => showAlert("You currently cannot set listings private, we will change this very very soon.")}>Change Visibility</button>
               <hr />
-              <button className="textred fullwidth" onClick={() => showAlert("Marked for deletion")}>Delete</button>
+              <button className="textred fullwidth" onClick={() => deleteDoc(listingRef)}>Delete</button>
               <hr />
             </div>
           </li>
