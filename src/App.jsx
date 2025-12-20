@@ -38,8 +38,7 @@ function App() {
       <div>
         <nav>
           <LinkImage to="/" src="/assets/logos/skillmesa.svg" width={100} height={100} alt="Skillmesa Logo" />
-          <Link to="/home">home</Link>
-          <Link to="/comingsoon">dashboard</Link>
+          <Link to="/home">dashboard</Link>
           <Link to="/explore">explore</Link>
           <Link to="/comingsoon">opportunities</Link>
           {user ? (
