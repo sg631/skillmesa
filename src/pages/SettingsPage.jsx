@@ -9,7 +9,7 @@ function SettingsPage() {
   return (
     <>
       <title>coming soon | skillmesa</title>
-      <h1>Settings</h1>
+      <h1>(DEFUNCT) Settings</h1>
         <h2 className='textmedium'>Account Details</h2>
         <textarea placeholder="loading bio.." className="textsmall"></textarea><br></br><button className='texttiny'>save bio</button>
         <br></br><br></br>
@@ -29,7 +29,6 @@ function SettingsPage() {
         <input type="password" placeholder="new password.." className="textsmall"></input><br></br>
         <input type="password" placeholder="confirm new password.." className="textsmall"></input><br/><br/><button className='texttiny'>change password</button>
         <br></br><br></br>
-        <span className="textsmall">This page is a work in progress (or in active development). Check again later.</span>
     </>
   );
 }
