@@ -13,6 +13,7 @@ import OpenSharedLinkPage from './pages/OpenSharedLinkPage'
 import ManagePage from './pages/ManagePage'
 import ExplorePage from './pages/ExplorePage.jsx';
 import ListingDetailPage from './pages/ListingDetailPage.jsx';
+import SettingsPage from './pages/SettingsPage.jsx';
 
 import { LinkButton } from './components/LinkElements';
 import { LinkImage } from './components/LinkElements';
@@ -73,7 +74,7 @@ function App() {
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/profile/:userUIDparam" element={<ProfilePage />} />
                 <Route path="/notifications" element={<ComingSoonPage />} />
-                <Route path="/settings" element={<ComingSoonPage />} />
+                <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/explore" element={<ExplorePage />} />
                 <Route
                   path="/create"
@@ -92,6 +93,9 @@ function App() {
           </PageTransition>
         </div>
       </div>
+      <footer className='texttiny'>
+        Skillmesa is currently in development. Stay tuned for updates!
+      </footer>
     </Router>
   );
 }

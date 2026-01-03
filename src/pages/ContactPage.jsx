@@ -88,10 +88,6 @@ function ProfilePage() {
         <span className="phonenumdisplay">{profileData.contact.phone || "No attached phone number"}</span>
         <button disabled>Chat (COMING SOON)</button>
       </div>
-
-      <footer className="texttiny">
-        Skillmesa is currently in development. Stay tuned for updates!
-      </footer>
     </>
   );
 }

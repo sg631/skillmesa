@@ -47,9 +47,6 @@ function StartingPage() {
         Get Started
       </LinkButton>
 
-      <footer className='texttiny'>
-        Skillmesa is currently in development. Stay tuned for updates!
-      </footer>
     </>
   );
 }

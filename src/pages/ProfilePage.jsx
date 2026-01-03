@@ -99,9 +99,6 @@ function ProfilePage() {
         />
       </div>
 
-      <footer className="texttiny">
-        Skillmesa is currently in development. Stay tuned for updates!
-      </footer>
     </>
   );
 }
