@@ -4,7 +4,6 @@ import { auth, db, storage } from "../firebase";
 import { collection, addDoc, updateDoc, doc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import showAlert from '../components/ShowAlert';
-import WhiteboardComponent from '../components/WhiteboardComponent';
 
 function CreateListingPage() {
   const [user, setUser] = React.useState(null);

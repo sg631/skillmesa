@@ -6,8 +6,7 @@ import { LinkButton } from "../components/LinkElements";
 import showAlert from "../components/ShowAlert";
 import { TabBarElement, TabContainerElement } from "../components/TabElements";
 import TextEditor from "../components/TextEditor";
-import DropinImgEditor from "../components/DropinImgEditor";
-import WhiteboardComponent from "../components/WhiteboardComponent";
+
 
 function ManagePage() {
   const { listingId } = useParams();
@@ -208,7 +207,6 @@ function ManagePage() {
           <li data-display-index="2">
             <h1>Image editor</h1>
             <p>Warning, it is currently expirimental and may not function as expected. You have to use the save functionality for now, you cannot directly upload to images from the editor.</p>
-            <WhiteboardComponent />
           </li>
 
           <li data-display-index="3">
