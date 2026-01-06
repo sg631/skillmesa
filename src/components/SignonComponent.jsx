@@ -96,6 +96,8 @@ function SignonComponent({ mode = "dual", width, height }) {
                 case "auth/too-many-requests":
                     errorMessage = "Too many recent requests. Try again later."
                     break;
+                case "auth/password-does-not-meet-requirements":
+                    errorMessage = "Password does not meet requirements. It must have an uppercase, lowercase, symbol, number, and be at least 6 characters long."
             }
             showAlert(errorMessage)
         }

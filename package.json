@@ -19,9 +19,11 @@
     "lexical": "^0.37.0",
     "process": "^0.11.10",
     "react": "^19.2.0",
+    "react-design-editor": "^0.0.76",
     "react-dom": "^19.2.0",
     "react-filerobot-image-editor": "^4.9.1",
-    "react-router-dom": "^7.8.0"
+    "react-router-dom": "^7.8.0",
+    "tinycolor2": "^1.6.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
