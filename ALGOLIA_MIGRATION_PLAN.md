@@ -100,32 +100,82 @@ Verify records appear in Algolia Dashboard with correct schema + owner data.
 1. `desc(createdAtTimestamp)` — newer first
 2. `desc(shares)` — more popular first
 
-### 2.4 Query Rules (~18 rules)
+### 2.4 Query Rules (37 rules)
 
-These strip recognized keywords from the query text and apply filters:
+Each keyword gets its own rule. For every rule in the Algolia Dashboard (**Enhance > Rules > Create Rule**), configure:
 
-| Condition contains | Action |
-|-------------------|--------|
-| "cheap" / "affordable" / "budget" | Remove word, filter `price <= 20` |
-| "free" | Remove word, filter `price = 0` |
-| "expensive" / "premium" | Remove word, filter `price >= 50` |
-| "online" | Remove word, filter `modality:Online` |
-| "in-person" / "in person" / "local" | Remove phrase, filter `modality:In-Person` |
-| "class" / "classes" | Remove word, filter `type:class` |
-| "service" / "services" | Remove word, filter `type:service` |
-| "tutoring" / "tutor" | Remove word, filter `category:tutoring` |
-| "math" | Remove word, filter `category:math` |
-| "music" | Remove word, filter `category:music` |
-| "coding" / "programming" / "code" | Remove word, filter `category:coding` |
-| "art" / "drawing" / "painting" | Remove word, filter `category:art` |
-| "language" / "spanish" / "french" | Remove word, filter `category:language` |
-| "design" / "graphic design" / "ux" | Remove word, filter `category:design` |
-| "writing" / "editing" | Remove word, filter `category:writing` |
-| "business" / "marketing" | Remove word, filter `category:business` |
-| "health" / "fitness" / "yoga" | Remove word, filter `category:health` |
-| "volunteering" / "volunteer" | Remove word, filter `category:volunteering` |
+**Condition section:**
+- Toggle **Query** on, set dropdown to **"Is"**, enter the keyword
+- Check **"Apply to plurals, synonyms and typos"**
 
-**Example:** "cheap online math classes" fires 4 rules, resulting in `price <= 20 AND modality:Online AND category:math AND type:class` with empty remaining query (returns all matches).
+**Consequence section — add TWO consequences per rule:**
+1. **Remove Word** → enter the same keyword
+2. **Add Query Parameter** → enter the filter JSON
+
+#### Price rules
+
+| Query (keyword) | Remove Word | Add Query Parameter |
+|-----------------|-------------|---------------------|
+| `cheap` | `cheap` | `{"filters":"price <= 20"}` |
+| `affordable` | `affordable` | `{"filters":"price <= 20"}` |
+| `budget` | `budget` | `{"filters":"price <= 20"}` |
+| `free` | `free` | `{"filters":"price = 0"}` |
+| `expensive` | `expensive` | `{"filters":"price >= 50"}` |
+| `premium` | `premium` | `{"filters":"price >= 50"}` |
+
+#### Modality rules
+
+| Query (keyword) | Remove Word | Add Query Parameter |
+|-----------------|-------------|---------------------|
+| `online` | `online` | `{"filters":"modality:Online"}` |
+| `in-person` | `in-person` | `{"filters":"modality:In-Person"}` |
+| `in person` | `in person` | `{"filters":"modality:In-Person"}` |
+| `local` | `local` | `{"filters":"modality:In-Person"}` |
+
+#### Type rules
+
+| Query (keyword) | Remove Word | Add Query Parameter |
+|-----------------|-------------|---------------------|
+| `class` | `class` | `{"filters":"type:class"}` |
+| `classes` | `classes` | `{"filters":"type:class"}` |
+| `service` | `service` | `{"filters":"type:service"}` |
+| `services` | `services` | `{"filters":"type:service"}` |
+
+#### Category rules
+
+| Query (keyword) | Remove Word | Add Query Parameter |
+|-----------------|-------------|---------------------|
+| `tutoring` | `tutoring` | `{"filters":"category:tutoring"}` |
+| `tutor` | `tutor` | `{"filters":"category:tutoring"}` |
+| `math` | `math` | `{"filters":"category:math"}` |
+| `music` | `music` | `{"filters":"category:music"}` |
+| `coding` | `coding` | `{"filters":"category:coding"}` |
+| `programming` | `programming` | `{"filters":"category:coding"}` |
+| `code` | `code` | `{"filters":"category:coding"}` |
+| `art` | `art` | `{"filters":"category:art"}` |
+| `drawing` | `drawing` | `{"filters":"category:art"}` |
+| `painting` | `painting` | `{"filters":"category:art"}` |
+| `language` | `language` | `{"filters":"category:language"}` |
+| `spanish` | `spanish` | `{"filters":"category:language"}` |
+| `french` | `french` | `{"filters":"category:language"}` |
+| `design` | `design` | `{"filters":"category:design"}` |
+| `writing` | `writing` | `{"filters":"category:writing"}` |
+| `editing` | `editing` | `{"filters":"category:writing"}` |
+| `business` | `business` | `{"filters":"category:business"}` |
+| `marketing` | `marketing` | `{"filters":"category:business"}` |
+| `health` | `health` | `{"filters":"category:health"}` |
+| `fitness` | `fitness` | `{"filters":"category:health"}` |
+| `yoga` | `yoga` | `{"filters":"category:health"}` |
+| `volunteering` | `volunteering` | `{"filters":"category:volunteering"}` |
+| `volunteer` | `volunteer` | `{"filters":"category:volunteering"}` |
+
+**Example:** A user types "cheap online math classes" — 4 rules fire:
+- `cheap` → removed, adds `price <= 20`
+- `online` → removed, adds `modality:Online`
+- `math` → removed, adds `category:math`
+- `classes` → removed, adds `type:class`
+
+Remaining query is empty, so Algolia returns all listings matching those 4 filters combined.
 
 ### 2.5 Synonyms (optional)
 
