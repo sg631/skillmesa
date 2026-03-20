@@ -105,7 +105,7 @@ Verify records appear in Algolia Dashboard with correct schema + owner data.
 Each keyword gets its own rule. For every rule in the Algolia Dashboard (**Enhance > Rules > Create Rule**), configure:
 
 **Condition section:**
-- Toggle **Query** on, set dropdown to **"Is"**, enter the keyword
+- Toggle **Query** on, set dropdown to **"Contains"**, enter the keyword
 - Check **"Apply to plurals, synonyms and typos"**
 
 **Consequence section — add TWO consequences per rule:**
