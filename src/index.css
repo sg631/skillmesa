@@ -943,20 +943,516 @@ a:has(span[data-lexical-text=true]):hover::before{
   font-weight: 700;
 }
 
-.search-filter-panel {
-  background: white;
+/* ── Explore page layout ── */
+
+/* Search panel — gray card containing search bar, controls, advanced */
+.explore-search-panel {
+  max-width: 1600px;
+  margin: 0 auto 24px;
+  padding: 20px 24px;
+  background: #f0f0f0;
   border-radius: 15px;
-  display: inline-block;
-  border: none;
-  box-shadow: 0px 0px 8px 1px rgba(130, 130, 130, 0.251);
-  width: 500px;
-  min-height: 80px;
-  scale: 0.9;
+  box-shadow: 0px 0px 8px 1px rgba(130, 130, 130, 0.2);
 }
 
-.search-filter-panel input {
-  margin-top: 15px;
+/* Full-width search input inside the panel */
+.explore-search-panel .ais-SearchBox-input {
+  width: 100%;
+  max-width: 100%;
+  padding: 1em 1.4em;
+  font-size: 1.1em;
+  border-radius: 100px;
+  border: 1px solid #ccc;
+  background: white;
+  box-sizing: border-box;
+  transition: border-color 0.25s, box-shadow 0.25s;
 }
+
+.explore-search-panel .ais-SearchBox-input:focus {
+  box-shadow: 0px 4px 0px rgb(204 221 243);
+  outline: none;
+  border-color: #9df7ff;
+}
+
+/* Controls row: toggle + dropdowns + refinements */
+.explore-controls-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+/* Online / In-Person toggle switch */
+.modality-toggle {
+  display: flex;
+  border-radius: 100px;
+  overflow: hidden;
+  border: 1px solid #ccc;
+  background: white;
+}
+
+.modality-toggle-btn {
+  padding: 0.5em 1em;
+  font-size: 0.85em;
+  font-weight: 500;
+  font-family: inherit;
+  border: none;
+  background: white;
+  cursor: pointer;
+  color: #555;
+  transition: background-color 0.15s, color 0.15s;
+  box-shadow: none;
+}
+
+.modality-toggle-btn:first-child {
+  border-right: 1px solid #ccc;
+}
+
+.modality-toggle-btn:hover {
+  background-color: #f5f5f5;
+}
+
+.modality-toggle-btn.active {
+  background-color: #b8ecff;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+/* ── Tag Picker ── */
+
+.tag-picker {
+  position: relative;
+  flex: 1 1 200px;
+  min-width: 180px;
+}
+
+.tag-picker-input-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 100px;
+  padding: 4px 12px;
+  transition: box-shadow 0.25s, border-color 0.25s;
+}
+
+.tag-picker-input-row:focus-within {
+  box-shadow: 0px 4px 0px rgb(204 221 243);
+  border-color: #9df7ff;
+}
+
+.tag-picker-input {
+  border: none;
+  outline: none;
+  padding: 0.4em 0;
+  font-size: 0.85em;
+  font-family: inherit;
+  flex: 1 1 100px;
+  min-width: 80px;
+  background: transparent;
+  box-shadow: none;
+  max-width: none;
+  width: auto;
+  max-height: none;
+  border-radius: 0;
+}
+
+.tag-picker-input:focus {
+  box-shadow: none;
+}
+
+.tag-picker-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #b8ecff;
+  border-radius: 100px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tag-picker-chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: #555;
+  padding: 0;
+  line-height: 1;
+  box-shadow: none;
+}
+
+.tag-picker-chip-remove:hover {
+  color: #d00;
+  background: none;
+  transform: none;
+  box-shadow: none;
+}
+
+.tag-picker-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.12);
+  list-style: none;
+  padding: 6px 0;
+  z-index: 100;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.tag-picker-dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.tag-picker-dropdown-item:hover {
+  background-color: #f0f8ff;
+}
+
+.tag-picker-dropdown-count {
+  font-size: 12px;
+  color: #999;
+}
+
+/* Dropdown selects for Type and Category */
+.explore-dropdown {
+  padding: 0.5em 1em;
+  font-size: 0.85em;
+  font-family: inherit;
+  font-weight: 500;
+  border-radius: 100px;
+  border: 1px solid #ccc;
+  background: white;
+  color: #3c3c3c;
+  cursor: pointer;
+  appearance: auto;
+  max-width: 220px;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.explore-dropdown:focus {
+  box-shadow: 0px 4px 0px rgb(204 221 243);
+  outline: none;
+}
+
+/* Divider line */
+.explore-divider {
+  border: none;
+  border-top: 1px solid #d0d0d0;
+  margin: 14px 0 10px;
+}
+
+/* Advanced button row */
+.explore-advanced-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.explore-advanced-btn {
+  border-radius: 8px;
+  border: 3px solid transparent;
+  padding: 0.45em 1em;
+  font-size: 0.85em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0px 4px 0px rgb(204 221 243);
+  transition: box-shadow 0.15s, transform 0.15s, background-color 0.15s;
+}
+
+.explore-advanced-btn:hover {
+  background-color: #fff8c9;
+  transform: translateY(-2px);
+  box-shadow: 0px 6px 0px rgb(204 221 243);
+}
+
+/* Advanced filters panel (revealed on toggle) */
+.explore-advanced-panel {
+  margin-top: 14px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.explore-filter-group {
+  flex: 1 1 200px;
+  min-width: 180px;
+  max-width: 350px;
+}
+
+.explore-filter-group h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+/* ── Results area (full width) ── */
+
+.explore-results {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.explore-pagination {
+  margin: 24px 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ── Algolia Hits grid — responsive 3-4 column ── */
+
+.ais-Hits-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(370px, 1fr));
+  gap: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  justify-items: center;
+}
+
+.ais-Hits-item {
+  list-style: none;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+}
+
+/* ── Algolia SearchBox overrides ── */
+
+.ais-SearchBox-input {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.8em 1em;
+  font-size: 0.85em;
+  font-family: inherit;
+  font-weight: 400;
+  border-radius: 100px;
+  border: 1px solid #ccc;
+  transition: border-color 0.25s, box-shadow 0.25s;
+  box-sizing: border-box;
+}
+
+.ais-SearchBox-input:focus {
+  box-shadow: 0px 4px 0px rgb(204 221 243);
+  outline: none;
+}
+
+.ais-SearchBox-form {
+  position: relative;
+}
+
+.ais-SearchBox-submit,
+.ais-SearchBox-reset {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* ── Algolia RefinementList overrides ── */
+
+.ais-RefinementList-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ais-RefinementList-item {
+  padding: 4px 0;
+}
+
+.ais-RefinementList-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.ais-RefinementList-count {
+  background: #efefef;
+  border-radius: 15px;
+  padding: 2px 8px;
+  font-size: 12px;
+  color: #555;
+}
+
+.ais-RefinementList-searchBox .ais-SearchBox-input {
+  font-size: 0.8em;
+  padding: 0.5em 0.8em;
+}
+
+/* ── Algolia RangeInput overrides ── */
+
+.ais-RangeInput-input {
+  width: 80px;
+  padding: 0.5em;
+  font-size: 0.8em;
+  font-family: inherit;
+  border-radius: 100px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+.ais-RangeInput-input:focus {
+  box-shadow: 0px 4px 0px rgb(204 221 243);
+  outline: none;
+}
+
+.ais-RangeInput-submit {
+  border-radius: 8px;
+  border: 3px solid transparent;
+  padding: 0.4em 0.8em;
+  font-size: 0.8em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0px 4px 0px rgb(204 221 243);
+  transition: box-shadow 0.15s, transform 0.15s, background-color 0.15s;
+}
+
+.ais-RangeInput-submit:hover {
+  background-color: #fff8c9;
+  transform: translateY(-2px);
+  box-shadow: 0px 6px 0px rgb(204 221 243);
+}
+
+/* ── Algolia Pagination overrides ── */
+
+.ais-Pagination-list {
+  display: flex;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ais-Pagination-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgb(246, 246, 246);
+  box-shadow: 0px 0px 5px 1px rgba(130, 130, 130, 0.3);
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+  transition: background-color 0.15s, transform 0.15s;
+}
+
+.ais-Pagination-link:hover {
+  background-color: #fff8c9;
+  transform: translateY(-2px);
+}
+
+.ais-Pagination-item--selected .ais-Pagination-link {
+  background-color: #b8ecff;
+  font-weight: 700;
+}
+
+.ais-Pagination-item--disabled .ais-Pagination-link {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Algolia CurrentRefinements / ClearRefinements ── */
+
+.ais-CurrentRefinements {
+  margin: 10px 0;
+}
+
+.ais-CurrentRefinements-item {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 4px 0;
+}
+
+.ais-CurrentRefinements-category {
+  background: #b8ecff;
+  border-radius: 15px;
+  padding: 4px 10px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ais-CurrentRefinements-delete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  box-shadow: none;
+}
+
+.ais-ClearRefinements-button {
+  border-radius: 8px;
+  border: 3px solid transparent;
+  padding: 0.4em 0.8em;
+  font-size: 0.85em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0px 4px 0px rgb(204 221 243);
+  transition: box-shadow 0.15s, transform 0.15s, background-color 0.15s;
+  margin: 8px 0;
+}
+
+.ais-ClearRefinements-button:hover {
+  background-color: #fff8c9;
+  transform: translateY(-2px);
+  box-shadow: 0px 6px 0px rgb(204 221 243);
+}
+
+.ais-ClearRefinements-button--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Algolia Stats ── */
+
+.ais-Stats {
+  color: #555;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+/* ── Algolia Highlight ── */
+
+.ais-Highlight-highlighted {
+  background: #9df7ff;
+  font-style: normal;
+}
+
 .panel {
   max-height: 850px;
 }
