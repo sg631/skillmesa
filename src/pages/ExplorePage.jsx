@@ -1,19 +1,22 @@
 import React from 'react';
+import { Title, Text, Button, Group, Paper, Stack, Badge, Divider, Select, SimpleGrid, Pill, PillsInput } from '@mantine/core';
 import {
   InstantSearch,
-  SearchBox,
-  Hits,
-  RangeInput,
-  Pagination,
-  CurrentRefinements,
-  ClearRefinements,
-  Stats,
+  useHits,
   Configure,
   useMenu,
   useRefinementList,
 } from 'react-instantsearch';
 import { searchClient, ALGOLIA_INDEX_NAME } from '../algolia';
 import AlgoliaHit from '../components/AlgoliaHit.jsx';
+import {
+  MantineSearchBox,
+  MantinePaginationWidget,
+  MantineStats,
+  MantineCurrentRefinements,
+  MantineClearRefinements,
+  MantineRangeInput,
+} from '../components/AlgoliaWidgets.jsx';
 
 function ModalityToggle() {
   const { items, refine } = useMenu({ attribute: 'modality' });
@@ -24,20 +27,26 @@ function ModalityToggle() {
   };
 
   return (
-    <div className="modality-toggle">
-      <button
-        className={`modality-toggle-btn ${activeValue === 'Online' ? 'active' : ''}`}
+    <Group gap={0} style={{ border: '1px solid var(--mantine-color-gray-3)', borderRadius: 'var(--mantine-radius-xl)', overflow: 'hidden' }}>
+      <Button
+        variant={activeValue === 'Online' ? 'filled' : 'subtle'}
+        color={activeValue === 'Online' ? 'cyan' : 'gray'}
+        radius={0}
+        size="sm"
         onClick={() => toggle('Online')}
       >
         Online
-      </button>
-      <button
-        className={`modality-toggle-btn ${activeValue === 'In-Person' ? 'active' : ''}`}
+      </Button>
+      <Button
+        variant={activeValue === 'In-Person' ? 'filled' : 'subtle'}
+        color={activeValue === 'In-Person' ? 'cyan' : 'gray'}
+        radius={0}
+        size="sm"
         onClick={() => toggle('In-Person')}
       >
         In-Person
-      </button>
-    </div>
+      </Button>
+    </Group>
   );
 }
 
@@ -46,19 +55,23 @@ function MenuDropdown({ attribute, label, allLabel = 'All' }) {
   const activeValue = items.find((i) => i.isRefined)?.value || '';
 
   return (
-    <select
-      className="explore-dropdown"
-      value={activeValue}
-      onChange={(e) => refine(e.target.value)}
+    <Select
+      placeholder={allLabel}
+      value={activeValue || null}
+      onChange={(val) => refine(val || '')}
+      data={[
+        { value: '', label: allLabel },
+        ...items.map((item) => ({
+          value: item.value,
+          label: `${item.label} (${item.count})`,
+        })),
+      ]}
+      clearable
+      size="sm"
+      radius="xl"
+      style={{ minWidth: 180 }}
       aria-label={label}
-    >
-      <option value="">{allLabel}</option>
-      {items.map((item) => (
-        <option key={item.value} value={item.value}>
-          {item.label} ({item.count})
-        </option>
-      ))}
-    </select>
+    />
   );
 }
 
@@ -72,7 +85,6 @@ function TagPicker() {
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const wrapperRef = React.useRef(null);
 
-  // Close dropdown when clicking outside
   React.useEffect(() => {
     const handleClickOutside = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
@@ -100,54 +112,84 @@ function TagPicker() {
     setDropdownOpen(false);
   };
 
-  const handleRemove = (value) => {
-    refine(value);
-  };
-
-  const handleFocus = () => {
-    setDropdownOpen(true);
-    searchForItems(query);
-  };
-
   return (
-    <div className="tag-picker" ref={wrapperRef}>
-      <div className="tag-picker-input-row">
-        <input
-          className="tag-picker-input"
-          type="text"
-          placeholder="Search tags..."
-          value={query}
-          onChange={handleInputChange}
-          onFocus={handleFocus}
-        />
-        {selectedTags.map((tag) => (
-          <span key={tag.value} className="tag-picker-chip">
-            {tag.label}
-            <button
-              className="tag-picker-chip-remove"
-              onClick={() => handleRemove(tag.value)}
+    <div ref={wrapperRef} style={{ position: 'relative', flex: '1 1 200px', minWidth: 180 }}>
+      <PillsInput size="sm" radius="xl">
+        <Pill.Group>
+          {selectedTags.map((tag) => (
+            <Pill
+              key={tag.value}
+              withRemoveButton
+              onRemove={() => refine(tag.value)}
             >
-              x
-            </button>
-          </span>
-        ))}
-      </div>
+              {tag.label}
+            </Pill>
+          ))}
+          <PillsInput.Field
+            placeholder="Search tags..."
+            value={query}
+            onChange={handleInputChange}
+            onFocus={() => { setDropdownOpen(true); searchForItems(query); }}
+          />
+        </Pill.Group>
+      </PillsInput>
 
       {dropdownOpen && suggestions.length > 0 && (
-        <ul className="tag-picker-dropdown">
+        <Paper
+          shadow="md"
+          radius="md"
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            marginTop: 4,
+            zIndex: 100,
+            maxHeight: 240,
+            overflowY: 'auto',
+          }}
+        >
           {suggestions.slice(0, 8).map((item) => (
-            <li
+            <Group
               key={item.value}
-              className="tag-picker-dropdown-item"
+              justify="space-between"
+              px="sm"
+              py={6}
+              style={{ cursor: 'pointer', fontSize: 14, transition: 'background 0.1s' }}
               onMouseDown={() => handleSelect(item.value)}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--mantine-color-cyan-0)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
               <span>{item.label}</span>
-              <span className="tag-picker-dropdown-count">{item.count}</span>
-            </li>
+              <Text size="xs" c="dimmed">{item.count}</Text>
+            </Group>
           ))}
-        </ul>
+        </Paper>
       )}
     </div>
+  );
+}
+
+/** Custom Hits grid using Mantine SimpleGrid */
+function MantineHitsGrid() {
+  const { hits } = useHits();
+
+  if (hits.length === 0) {
+    return <Text ta="center" c="dimmed" py="xl">No results found.</Text>;
+  }
+
+  return (
+    <SimpleGrid
+      cols={{ base: 1, sm: 2, lg: 3, xl: 4 }}
+      spacing="lg"
+      verticalSpacing="lg"
+    >
+      {hits.map((hit) => (
+        <div key={hit.objectID} style={{ display: 'flex', justifyContent: 'center' }}>
+          <AlgoliaHit hit={hit} />
+        </div>
+      ))}
+    </SimpleGrid>
   );
 }
 
@@ -159,9 +201,11 @@ function ExplorePage() {
   }, []);
 
   return (
-    <>
-      <h1>Explore</h1>
-      <p>Explore everything that skillmesa has to offer. From babysitting to garden tending, from homework help to SAT prep, we're here.</p>
+    <Stack gap="md" py="xl" maw={1600} mx="auto" px="md">
+      <Title order={1} ta="center">Explore</Title>
+      <Text ta="center" c="dimmed">
+        Explore everything that skillmesa has to offer. From babysitting to garden tending, from homework help to SAT prep, we're here.
+      </Text>
 
       <InstantSearch
         searchClient={searchClient}
@@ -171,51 +215,59 @@ function ExplorePage() {
       >
         <Configure hitsPerPage={12} />
 
-        <div className="explore-search-panel">
-          <SearchBox placeholder="Search listings..." />
+        {/* Search & Filters Panel */}
+        <Paper shadow="sm" p="lg" radius="lg" bg="gray.0">
+          <MantineSearchBox placeholder="Search listings..." />
 
-          <div className="explore-controls-row">
+          <Group mt="md" gap="sm" wrap="wrap" align="center">
             <ModalityToggle />
             <TagPicker />
             <MenuDropdown attribute="type" label="Type" allLabel="All Types" />
-          </div>
+          </Group>
 
-          <hr className="explore-divider" />
+          <Divider my="sm" />
 
-          <div className="explore-advanced-row">
-            <CurrentRefinements />
-            <ClearRefinements translations={{ resetButtonText: 'Clear all' }} />
-            <button
-              className="explore-advanced-btn"
-              onClick={() => setAdvancedOpen(!advancedOpen)}
-            >
-              {advancedOpen ? 'Hide Advanced' : 'Advanced'}
-            </button>
-          </div>
+          <Group justify="space-between" align="center" wrap="wrap">
+            <MantineCurrentRefinements />
+            <Group gap="xs">
+              <MantineClearRefinements />
+              <Button
+                variant="light"
+                color="cyan"
+                size="sm"
+                onClick={() => setAdvancedOpen(!advancedOpen)}
+              >
+                {advancedOpen ? 'Hide Advanced' : 'Advanced'}
+              </Button>
+            </Group>
+          </Group>
 
           {advancedOpen && (
-            <div className="explore-advanced-panel">
-              <div className="explore-filter-group">
-                <h4>Category</h4>
-                <MenuDropdown attribute="category" label="Category" allLabel="All Categories" />
-              </div>
-              <div className="explore-filter-group">
-                <h4>Price Range</h4>
-                <RangeInput attribute="price" />
-              </div>
-            </div>
+            <Paper p="md" radius="md" mt="sm" bg="white">
+              <Group gap="xl" wrap="wrap">
+                <Stack gap="xs" style={{ flex: '1 1 200px', maxWidth: 350 }}>
+                  <Text size="sm" fw={600} c="dimmed">Category</Text>
+                  <MenuDropdown attribute="category" label="Category" allLabel="All Categories" />
+                </Stack>
+                <Stack gap="xs" style={{ flex: '1 1 200px', maxWidth: 350 }}>
+                  <Text size="sm" fw={600} c="dimmed">Price Range</Text>
+                  <MantineRangeInput attribute="price" />
+                </Stack>
+              </Group>
+            </Paper>
           )}
-        </div>
+        </Paper>
 
-        <div className="explore-results">
-          <Stats />
-          <Hits hitComponent={AlgoliaHit} />
-          <div className="explore-pagination">
-            <Pagination />
-          </div>
-        </div>
+        {/* Results */}
+        <Stack gap="md">
+          <MantineStats />
+          <MantineHitsGrid />
+          <Group justify="center" mt="lg">
+            <MantinePaginationWidget />
+          </Group>
+        </Stack>
       </InstantSearch>
-    </>
+    </Stack>
   );
 }
 

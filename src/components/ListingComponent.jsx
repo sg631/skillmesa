@@ -3,6 +3,7 @@ import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, doc, getDoc } from "firebase/firestore";
 import { LinkButton } from "./LinkElements.jsx";
+import { Card, Image, Text, Badge, Group, Stack, Avatar, Divider, ScrollArea } from "@mantine/core";
 
 function ListingComponent({ id }) {
   const listings = collection(db, "listings");
@@ -81,46 +82,93 @@ function ListingComponent({ id }) {
   const isOwner = Boolean(currentUser && ownerUID && currentUser.uid === ownerUID);
 
   return (
-    <div className="listing">
-      <span className="listing-type-label" data-value={type}>{type}</span>
-      <span
-        className="listing-online-label"
-        data-value={online ? "online" : "in-person"}
-      >
-        {online ? "online" : "in-person"}
-      </span>
-      <span className="listing-zip-label" data-value={zipCode}><code>{zipCode}</code></span>
-      <hr />
-      <img className="listing-thumbnail" alt="Listing thumbnail" src={thumbnailUrl}/>
-      <span className="listing-title">{title}</span>
-      <p className="listing-description">{description}</p>
+    <Card shadow="md" padding={0} radius="lg" withBorder style={{ width: 350, minHeight: 700, display: 'flex', flexDirection: 'column' }}>
+      {/* Full-width stacked label banners with gaps */}
+      <Card.Section>
+        <Stack gap={5} p={5}>
+          <Badge
+            fullWidth
+            radius={0}
+            size="xl"
+            color={type === "service" ? "yellow" : "cyan"}
+            variant="light"
+            styles={{ root: { fontWeight: 700, borderRadius: 'var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0' } }}
+          >
+            {type}
+          </Badge>
+          <Badge
+            fullWidth
+            radius={0}
+            size="xl"
+            color={online ? "violet" : "green"}
+            variant="light"
+            styles={{ root: { fontWeight: 700 } }}
+          >
+            {online ? "online" : "in-person"}
+          </Badge>
+          {zipCode && (
+            <Badge fullWidth radius={0} size="lg" color="gray" variant="light">
+              {zipCode}
+            </Badge>
+          )}
+        </Stack>
+      </Card.Section>
 
-      <ul className="listing-tags-container">
-        {tags.map((tag, index) => (
-          <li key={index} className="listing-tag">{tag}</li>
-        ))}
-      </ul>
+      <Divider />
 
-      <div className="controls-acc">
-        <div className="accdisplay" onClick={() => window.location = "/profile/" + ownerUID}>
-          <img
-            className="accdisplay-profilepic"
-            src={profilePicUrl || "/assets/account1.svg"}
-            alt="Owner profile"
-          />
-          <span className="accdisplay-text">{ownerName}</span>
-        </div>
+      {/* Thumbnail with padding and rounded corners */}
+      <Card.Section p="sm">
+        <Image
+          src={thumbnailUrl}
+          height={200}
+          radius="lg"
+          alt="Listing thumbnail"
+          fallbackSrc="https://placehold.co/350x200?text=No+Image"
+        />
+      </Card.Section>
 
-        <hr />
-        <LinkButton to={`/listing/${id}`} className="fullwidth">
-          View Listing
-        </LinkButton>
-        <hr />
-        <LinkButton disabled={!isOwner} to={`/manage/${id}`} className="fullwidth">
-          Manage Listing
-        </LinkButton>
-      </div>
-    </div>
+      <Stack gap="xs" px="md" pb="md" style={{ flex: 1 }}>
+        <Text fw={600} size="lg" ta="center" lineClamp={2} style={{ minHeight: 52 }}>
+          {title}
+        </Text>
+
+        <Text size="sm" c="dimmed" lineClamp={3}>
+          {description}
+        </Text>
+
+        <ScrollArea scrollbarSize={4} type="hover" offsetScrollbars>
+          <Group gap={6} wrap="nowrap">
+            {tags.map((tag, index) => (
+              <Badge key={index} variant="light" color="gray" size="sm" style={{ flexShrink: 0 }}>
+                {tag}
+              </Badge>
+            ))}
+          </Group>
+        </ScrollArea>
+
+        <Divider />
+
+        <Group
+          gap="sm"
+          style={{ cursor: "pointer" }}
+          onClick={() => window.location = "/profile/" + ownerUID}
+        >
+          <Avatar src={profilePicUrl || null} size="sm" radius="xl" />
+          <Text size="sm" truncate style={{ maxWidth: 200 }}>{ownerName}</Text>
+        </Group>
+
+        <Divider />
+
+        <Stack gap={6}>
+          <LinkButton to={`/listing/${id}`} fullWidth variant="light" color="cyan">
+            View Listing
+          </LinkButton>
+          <LinkButton disabled={!isOwner} to={`/manage/${id}`} fullWidth variant="subtle" color="gray">
+            Manage Listing
+          </LinkButton>
+        </Stack>
+      </Stack>
+    </Card>
   );
 }
 

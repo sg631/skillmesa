@@ -6,7 +6,7 @@ import { LinkButton } from "../components/LinkElements";
 import showAlert from "../components/ShowAlert";
 import { TabBarElement, TabContainerElement } from "../components/TabElements";
 import TextEditor from "../components/TextEditor";
-
+import { Title, Text, Textarea, Button, Group, Stack, Avatar, Badge, Divider, Paper, Code, ScrollArea, Image, TagsInput, Box } from "@mantine/core";
 
 function ManagePage() {
   const { listingId } = useParams();
@@ -15,17 +15,15 @@ function ManagePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
   const [thumbnailURL, setThumbnailUrl] = useState("");
-  const [price, setPrice] = useState("")
-  const [zipCode, setZipCode] = useState("")
+  const [price, setPrice] = useState("");
+  const [zipCode, setZipCode] = useState("");
 
-  // Editable fields
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState([]);
 
   const user = auth.currentUser;
 
-  // Fetch listing and owner info
   useEffect(() => {
     if (!listingId) return;
     let isMounted = true;
@@ -47,13 +45,11 @@ function ManagePage() {
           setTitle(listing.title || "");
           setDescription(listing.description || "");
           setTags(listing.tags || []);
-          setThumbnailUrl(listing.thumbnailURL || "")
+          setThumbnailUrl(listing.thumbnailURL || "");
           setPrice(listing.price || "");
-          setZipCode(listing.zipCode || "")
-          console.log(thumbnailURL)
+          setZipCode(listing.zipCode || "");
         }
 
-        // Fetch owner info
         if (listing.owner) {
           const ownerRef = doc(db, "users", listing.owner);
           const ownerSnap = await getDoc(ownerRef);
@@ -87,8 +83,8 @@ function ManagePage() {
           description,
           thumbnailURL,
           tags,
-          price:Number(parseFloat(price.replace(/[^0-9.]/g, '')).toFixed(2)),
-          zipCode
+          price: Number(parseFloat(price.toString().replace(/[^0-9.]/g, '')).toFixed(2)),
+          zipCode,
         },
         { merge: true }
       );
@@ -99,155 +95,206 @@ function ManagePage() {
     }
   };
 
-  if (loading) return <p>Loading listing...</p>;
-  if (!listingData) return <p>Listing not found.</p>;
+  async function copyTextToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  }
+
+  if (loading) return <Text ta="center" py="xl">Loading listing...</Text>;
+  if (!listingData) return <Text ta="center" py="xl">Listing not found.</Text>;
 
   const ownerName = ownerData?.displayName || "Unknown User";
-  const profilePicUrl = ownerData?.profilePic?.currentUrl || "/assets/account1.svg";
+  const profilePicUrl = ownerData?.profilePic?.currentUrl || null;
 
-  if (listingData.owner != user.uid) return (<Navigate to={"/listing/" + listingId}></Navigate>)
-  
+  if (listingData.owner != user.uid) return (<Navigate to={"/listing/" + listingId}></Navigate>);
+
   return (
-    <div className="listing-detail-page">
+    <Box style={{
+      position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+      display: 'flex', background: 'var(--mantine-color-dark-light)', backdropFilter: 'blur(6px)',
+      zIndex: 100,
+    }}>
       <title>manage | skillmesa</title>
-      <div className="largelisting">
-        {/* Editable Title */}
-        <br/><br/><br/>
-        <textarea
-          className="text-textarea textlarge"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        />
 
-        {/* Listing images */}
-        {listingData.images?.length > 0 && (
-          <div>
-            {listingData.images.map((img, i) => (
-              <img key={i} src={img.currentUrl || img.url} alt={`Listing ${i + 1}`} />
-            ))}
-          </div>
-        )}
-
-        {listingData.thumbnailURL && (
-          <img
-            className="listing-thumbnail"
-            src={listingData.thumbnailURL}
-            alt="Listing Thumbnail"
+      {/* Left panel */}
+      <Paper
+        radius={0}
+        p="xl"
+        style={{
+          width: 700, height: '100%', overflowY: 'auto',
+          borderRight: '3px solid rgba(208, 208, 208, 0.5)',
+        }}
+      >
+        <Stack gap="md" pt="xl">
+          <Textarea
+            variant="unstyled"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            autosize
+            styles={{ input: { fontSize: '1.8rem', fontWeight: 600, textAlign: 'center' } }}
           />
-        )}
 
-        {/* Editable Description */}
-        <textarea
-          className="text-textarea textsmall"
-          style={{ maxWidth: "none", width: "560px", fontWeight: "400" }}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
+          {listingData.thumbnailURL && (
+            <Image
+              src={listingData.thumbnailURL}
+              alt="Listing Thumbnail"
+              radius="md"
+              maw={560}
+              mx="auto"
+            />
+          )}
 
-        <p><strong>Price: </strong><br/><textarea
-          className="text-textarea textsmall"
-          style={{ maxWidth: "none", height:'30px', width: "560px", fontWeight: "400" }}
-          value={price}
-          placeholder="Type price in USD in format '3.65', no dollar sign!"
-          onChange={(e) => setPrice(e.target.value)}
-        /></p>
+          <Textarea
+            variant="unstyled"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            autosize
+            minRows={2}
+            styles={{ input: { maxWidth: 560, margin: '0 auto' } }}
+          />
 
-        <p><strong>Zip Code: </strong><br/><textarea
-          className="text-textarea textsmall"
-          style={{ maxWidth: "none", height:'30px', width: "560px", fontWeight: "400" }}
-          value={zipCode}
-          placeholder="Zip code as integer: e.g. '95630'"
-          onChange={(e) => setZipCode(e.target.value)}
-        /></p>
+          <Group gap="sm" justify="center">
+            <Text fw={600}>Price:</Text>
+            <Textarea
+              variant="unstyled"
+              value={price}
+              placeholder="Type price in USD in format '3.65', no dollar sign!"
+              onChange={(e) => setPrice(e.target.value)}
+              autosize
+              minRows={1}
+              style={{ width: 200 }}
+            />
+          </Group>
 
-        {/* Owner info */}
-        <div
-          className="accdisplay"
-          onClick={() => (window.location = "/profile/" + listingData.owner)}
-          style={{ cursor: "pointer" }}
-        >
-          <img className="accdisplay-profilepic" src={profilePicUrl} alt="Owner" />
-          <span className="accdisplay-text">{ownerName}</span>
-        </div>
+          <Group gap="sm" justify="center">
+            <Text fw={600}>Zip Code:</Text>
+            <Textarea
+              variant="unstyled"
+              value={zipCode}
+              placeholder="Zip code as integer: e.g. '95630'"
+              onChange={(e) => setZipCode(e.target.value)}
+              autosize
+              minRows={1}
+              style={{ width: 200 }}
+            />
+          </Group>
 
-        <ul className="listing-tags-container">
-          {listingData.tags?.map((tag, i) => (
-            <li key={i} className="listing-tag">{tag}</li>
-          ))}
-          <li className="listing-tag" style={{ cursor: "pointer" }} onClick={(e) => {let mynewtag=prompt("Add a tag:"); tags.push(mynewtag); showAlert((<p>Added new tag: <code>{mynewtag}</code>. Save and reload to see changes.</p>))}}>+</li>
-        </ul>
+          <Group
+            gap="sm"
+            style={{ cursor: "pointer" }}
+            onClick={() => (window.location = "/profile/" + listingData.owner)}
+          >
+            <Avatar src={profilePicUrl} size="sm" radius="xl" />
+            <Text size="sm">{ownerName}</Text>
+          </Group>
 
-        <hr/><LinkButton to={"/listing/" + listingId}>View</LinkButton>
-        <hr/><button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);showAlert(<p>Copied share link! <br /><code>{"https://skill-mesa.web.app/share/" + listingData.id}</code></p>)}}>Share</button>
-      </div>
+          <TagsInput
+            label="Tags"
+            value={tags}
+            onChange={setTags}
+            placeholder="Type a tag and press Enter"
+            clearable
+            acceptValueOnBlur
+            splitChars={[',']}
+          />
 
-      <div className="listing-detail-more-details">
-        <br/><br/><br/>
-        <TabBarElement>
-          <li onClick={() => setActiveTab(0)}>Attached Info</li>
-          <li onClick={() => setActiveTab(1)}>Images</li>
-          <li onClick={() => setActiveTab(2)}>Excalidraw Editor</li>
-          <li onClick={() => setActiveTab(3)}>Files</li>
-          <li onClick={() => setActiveTab(4)}>Manage</li>
-        </TabBarElement>
+          <Divider />
+          <LinkButton to={"/listing/" + listingId} fullWidth>View</LinkButton>
+          <Button
+            variant="light"
+            color="cyan"
+            fullWidth
+            onClick={() => {
+              copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);
+              showAlert(<p>Copied share link! <br /><Code>{"https://skill-mesa.web.app/share/" + listingData.id}</Code></p>);
+            }}
+          >
+            Share
+          </Button>
+        </Stack>
+      </Paper>
 
-        <TabContainerElement tabIndex={activeTab}>
-          <li data-display-index="0">
-            {/* Long Description Editor */}
-            <h1>We apologize for the inconvenience</h1>
-            <code>Temporarily removed extra info panel</code>
-            <br />
-          </li>
+      {/* Right panel */}
+      <Paper
+        radius={0}
+        p="xl"
+        style={{ flex: 1, height: '100%', overflowY: 'auto' }}
+      >
+        <Stack pt="xl">
+          <TabBarElement onTabChange={setActiveTab}>
+            <li>Attached Info</li>
+            <li>Images</li>
+            <li>Excalidraw Editor</li>
+            <li>Files</li>
+            <li>Manage</li>
+          </TabBarElement>
 
-          <li data-display-index="1">
-            <h1>We apologize for the inconvenience</h1>
-            <p><code>Temporarily removed image addition.</code> For thumbnail modification, visit the "Manage" tab.</p>
-          </li>
+          <TabContainerElement tabIndex={activeTab}>
+            <li>
+              <Title order={2}>We apologize for the inconvenience</Title>
+              <Code>Temporarily removed extra info panel</Code>
+            </li>
 
-          <li data-display-index="2">
-            <h1>Image editor</h1>
-            <p>Warning, it is currently expirimental and may not function as expected. You have to use the save functionality for now, you cannot directly upload to images from the editor.</p>
-          </li>
+            <li>
+              <Title order={2}>We apologize for the inconvenience</Title>
+              <Text><Code>Temporarily removed image addition.</Code> For thumbnail modification, visit the "Manage" tab.</Text>
+            </li>
 
-          <li data-display-index="3">
-            <h1>Sharing files is coming soon</h1>
-            <p>Use other methods of sharing files with collaborators or participants for now.</p>
-          </li>
+            <li>
+              <Title order={2}>Image editor</Title>
+              <Text>Warning, it is currently experimental and may not function as expected.</Text>
+            </li>
 
-          <li data-display-index="4">
-            <div className="controls-acc" style={{ width: "100%", height: "700px" }}>
-              <h1>Actions</h1>
-              <button className="fullwidth" onClick={handleSaveAll}>Save</button>
-              <hr />
-              <button className="fullwidth" disabled onClick={() => showAlert("Sorry, but skillmesa does not currently support additional collaborators.")}>Add Collaborators</button>
-              <hr />
-              <button onClick={() => showAlert("Due to firebase handling you currently cannot change the thumbnail. Sorry, this will be updated soon.")} className="fullwidth">Change Thumbnail</button>
-              <hr />
-              <button disabled className="fullwidth">Change Type</button>
-              <hr />
-              <h2>Dangerous Actions</h2>
-              <button disabled className="textred fullwidth">Change Owner</button>
-              <hr />
-              <button disabled className="textred fullwidth">Archive</button>
-              <hr />
-              <button className="textred fullwidth" onClick={() => showAlert("You currently cannot set listings private, we will change this very very soon.")}>Change Visibility</button>
-              <hr />
-              <button className="textred fullwidth" onClick={async () => {
-                try {
-                  await deleteDoc(doc(db, "listings", listingId));
-                  showAlert("Listing deleted.");
-                  window.location = "/";
-                } catch (err) {
-                  console.error("Failed to delete listing:", err);
-                  showAlert("Failed to delete listing.");
-                }
-              }}>Delete</button>
-              <hr />
-            </div>
-          </li>
-        </TabContainerElement>
-      </div>
-    </div>
+            <li>
+              <Title order={2}>Sharing files is coming soon</Title>
+              <Text>Use other methods of sharing files with collaborators or participants for now.</Text>
+            </li>
+
+            <li>
+              <Stack gap="sm" style={{ width: '100%' }}>
+                <Title order={2}>Actions</Title>
+                <Button fullWidth color="cyan" onClick={handleSaveAll}>Save</Button>
+                <Divider />
+                <Button fullWidth variant="light" disabled onClick={() => showAlert("Sorry, but skillmesa does not currently support additional collaborators.")}>
+                  Add Collaborators
+                </Button>
+                <Button fullWidth variant="light" onClick={() => showAlert("Due to firebase handling you currently cannot change the thumbnail. Sorry, this will be updated soon.")}>
+                  Change Thumbnail
+                </Button>
+                <Button fullWidth variant="light" disabled>Change Type</Button>
+                <Divider />
+                <Title order={3} c="red">Dangerous Actions</Title>
+                <Button fullWidth variant="light" color="red" disabled>Change Owner</Button>
+                <Button fullWidth variant="light" color="red" disabled>Archive</Button>
+                <Button fullWidth variant="light" color="red" onClick={() => showAlert("You currently cannot set listings private, we will change this very very soon.")}>
+                  Change Visibility
+                </Button>
+                <Button
+                  fullWidth
+                  variant="filled"
+                  color="red"
+                  onClick={async () => {
+                    try {
+                      await deleteDoc(doc(db, "listings", listingId));
+                      showAlert("Listing deleted.");
+                      window.location = "/";
+                    } catch (err) {
+                      console.error("Failed to delete listing:", err);
+                      showAlert("Failed to delete listing.");
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              </Stack>
+            </li>
+          </TabContainerElement>
+        </Stack>
+      </Paper>
+    </Box>
   );
 }
 

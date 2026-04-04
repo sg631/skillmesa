@@ -1,4 +1,5 @@
 import React from 'react';
+import { Title, Text, Stack, Image, Space } from '@mantine/core';
 import { LinkButton } from '../components/LinkElements.jsx';
 import CarouselElement from '../components/CarouselElement.jsx';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -11,43 +12,37 @@ function StartingPage() {
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
-      setCheckedAuth(true); // marks that Firebase has finished checking
+      setCheckedAuth(true);
     });
     return () => unsubscribe();
   }, []);
 
-  // Only render the button after auth state is known
   const getStartedLink = checkedAuth ? (user ? "/home" : "/signon") : "/signon";
 
   return (
-    <>
+    <Stack align="center" gap="lg" py="xl">
       <title>skillmesa</title>
-      <br />
-      <img src="/assets/logos/skillmesa-large.png" alt="Skillmesa Logo" width={465} height={110} />
-      <p>
-        <span className='textmedium'>
+      <Image src="/assets/logos/skillmesa-large.png" alt="Skillmesa Logo" w={465} h={110} fit="contain" />
+      <Stack align="center" gap="xs" ta="center">
+        <Text size="xl" fw={500}>
           Whether you're looking for opportunities, services, or knowledge in
-        </span>
-        <br />
-        <CarouselElement className="textcenter" style={{ marginTop: '20px' }}>
-          <li><span className='texthuge'>coding</span></li>
-          <li><span className='texthuge'>design</span></li>
-          <li><span className='texthuge'>writing</span></li>
-          <li><span className='texthuge'>music</span></li>
+        </Text>
+        <CarouselElement>
+          <li><Title order={1} fz="3rem">coding</Title></li>
+          <li><Title order={1} fz="3rem">design</Title></li>
+          <li><Title order={1} fz="3rem">writing</Title></li>
+          <li><Title order={1} fz="3rem">music</Title></li>
         </CarouselElement>
-        <br />
-        or more, Skillmesa is your platform to connect and thrive.
-        <br /><br /><br /><br />
-        <span className='textmedium'>
+        <Text>or more, Skillmesa is your platform to connect and thrive.</Text>
+        <Space h="xl" />
+        <Text size="xl" fw={500}>
           From babysitting to garden tending, and from homework help to SAT prep, we're here.
-        </span>
-      </p>
-
-      <LinkButton to={getStartedLink} className="textcenter">
+        </Text>
+      </Stack>
+      <LinkButton to={getStartedLink} size="lg">
         Get Started
       </LinkButton>
-
-    </>
+    </Stack>
   );
 }
 

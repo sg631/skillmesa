@@ -1,4 +1,5 @@
 import React from 'react';
+import { Title, Text, TextInput, Textarea, Select, NumberInput, Button, Stack, Image, FileInput, Paper, TagsInput } from '@mantine/core';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db, storage } from "../firebase";
 import { collection, addDoc, updateDoc, doc } from "firebase/firestore";
@@ -12,11 +13,11 @@ function CreateListingPage() {
   const [selectedImage, setSelectedImage] = React.useState(null);
   const [title, setTitle] = React.useState("");
   const [description, setDescription] = React.useState("");
-  const [tags, setTags] = React.useState("");
+  const [tags, setTags] = React.useState([]);
   const [category, setCategory] = React.useState("coding");
   const [type, setType] = React.useState("class");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [online, setOnline] = React.useState("in-person"); // store as string in form, convert when saving
+  const [online, setOnline] = React.useState("in-person");
   const [price, setPrice] = React.useState("");
   const [zipCode, setZipCode] = React.useState("");
 
@@ -28,8 +29,7 @@ function CreateListingPage() {
     return () => unsubscribe();
   }, []);
 
-  function handleImageSelect(event) {
-    const file = event.target.files[0];
+  function handleImageSelect(file) {
     if (!file) return;
     setSelectedImage(file);
     setPreviewUrl(URL.createObjectURL(file));
@@ -42,7 +42,7 @@ function CreateListingPage() {
       showAlert("You must be signed in to create a listing.");
       return;
     }
-    if (!title || !description || !tags || !price || !zipCode || !selectedImage) {
+    if (!title || !description || tags.length === 0 || !price || !zipCode || !selectedImage) {
       showAlert("Please fill out all required fields.");
       return;
     }
@@ -50,10 +50,7 @@ function CreateListingPage() {
     setIsSubmitting(true);
 
     try {
-      const tagsArray = tags
-        .split(",")
-        .map((tag) => tag.trim())
-        .filter((tag) => tag.length > 0);
+      const tagsArray = tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0);
 
       const listingsRef = collection(db, "listings");
       const newListingRef = await addDoc(listingsRef, {
@@ -69,7 +66,7 @@ function CreateListingPage() {
         thumbnailURL: "",
         createdAt: new Date().toISOString(),
         price: Number(parseFloat(String(price).replace(/[^0-9.]/g, '')).toFixed(2)),
-        zipCode
+        zipCode,
       });
 
       let imageURL = "";
@@ -91,7 +88,7 @@ function CreateListingPage() {
         });
       }
 
-      showAlert("✅ Listing created successfully!");
+      showAlert("Listing created successfully!");
       window.location.href = "/home";
     } catch (error) {
       console.error("Error creating listing:", error);
@@ -102,110 +99,136 @@ function CreateListingPage() {
   }
 
   return (
-    <>
+    <Stack align="center" gap="md" py="xl" maw={600} mx="auto">
       <title>create listing | skillmesa</title>
-      <br />
-      <h1>Create new listing</h1>
+      <Title order={1}>Create new listing</Title>
 
-      <form onSubmit={handleSubmit} noValidate>
-        <input
-          required
-          type="text"
-          placeholder="Title *"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-        /><br /><br />
+      <Paper shadow="sm" p="xl" radius="lg" w="100%" withBorder>
+        <form onSubmit={handleSubmit} noValidate>
+          <Stack gap="md">
+            <TextInput
+              required
+              label="Title"
+              placeholder="Title *"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
 
-        <textarea
-          required
-          placeholder="Description *"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        ></textarea><br /><br />
+            <Textarea
+              required
+              label="Description"
+              placeholder="Description *"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              minRows={3}
+              autosize
+            />
 
-        <input
-          required
-          type="text"
-          placeholder="Tags (comma separated) *"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-        /><br /><br />
+            <TagsInput
+              required
+              label="Tags"
+              placeholder="Type a tag and press Enter"
+              value={tags}
+              onChange={setTags}
+              clearable
+              acceptValueOnBlur
+              splitChars={[',']}
+            />
 
-        <input
-          required
-          type="number"
-          className="priceinput"
-          placeholder="USD, NUMBER ONLY*"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-        /><br/><br/>
+            <TextInput
+              required
+              label="Price (USD)"
+              placeholder="e.g. 25.00"
+              type="number"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
 
-        <input
-          required
-          type="text"
-          placeholder="ZIP Code *"
-          value={zipCode}
-          onChange={(e) => setZipCode(e.target.value)}
-        /><br/><br/>
+            <TextInput
+              required
+              label="ZIP Code"
+              placeholder="ZIP Code *"
+              value={zipCode}
+              onChange={(e) => setZipCode(e.target.value)}
+            />
 
-        <label>
-          Category *
-          <select required value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option value="coding">Coding and Development</option>
-            <option value="music">Music</option>
-            <option value="math">Math</option>
-            <option value="art">Art</option>
-            <option value="language">Language</option>
-            <option value="design">Design</option>
-            <option value="writing">Writing and Editing</option>
-            <option value="business">Business and Marketing</option>
-            <option value="home-services">Home and Personal Services</option>
-            <option value="health">Health, Fitness and Wellness</option>
-            <option value="tutoring">General Tutoring</option>
-            <option value="education">Class (Not encompassed by other options)</option>
-            <option value="volunteering">Volunteering Opportunity</option>
-            <option value="other">Other</option>
-          </select>
-        </label>
-        <br /><br />
+            <Select
+              required
+              label="Category"
+              value={category}
+              onChange={setCategory}
+              data={[
+                { value: "coding", label: "Coding and Development" },
+                { value: "music", label: "Music" },
+                { value: "math", label: "Math" },
+                { value: "art", label: "Art" },
+                { value: "language", label: "Language" },
+                { value: "design", label: "Design" },
+                { value: "writing", label: "Writing and Editing" },
+                { value: "business", label: "Business and Marketing" },
+                { value: "home-services", label: "Home and Personal Services" },
+                { value: "health", label: "Health, Fitness and Wellness" },
+                { value: "tutoring", label: "General Tutoring" },
+                { value: "education", label: "Class (Not encompassed by other options)" },
+                { value: "volunteering", label: "Volunteering Opportunity" },
+                { value: "other", label: "Other" },
+              ]}
+            />
 
-        <label>
-          Type *
-          <select required value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="class">Class</option>
-            <option value="service">Skill service</option>
-          </select>
-        </label>
-        <br /><br />
+            <Select
+              required
+              label="Type"
+              value={type}
+              onChange={setType}
+              data={[
+                { value: "class", label: "Class" },
+                { value: "service", label: "Skill service" },
+              ]}
+            />
 
-        <label>
-          Physical location *
-          <select required value={online} onChange={(e) => setOnline(e.target.value)}>
-            <option value="in-person">In-person (Recommended)</option>
-            <option value="online">Online</option>
-          </select>
-        </label>
-        <br /><br />
+            <Select
+              required
+              label="Physical location"
+              value={online}
+              onChange={setOnline}
+              data={[
+                { value: "in-person", label: "In-person (Recommended)" },
+                { value: "online", label: "Online" },
+              ]}
+            />
 
-        <h2>Upload Thumbnail *</h2>
-        <p>
-          <strong>Reccomended aspect ratio is 7:4, but thumbnail resolution is 350x200.</strong><br/>We reccomend Excalidraw or Canva for creating a thumbnail. <br/>Embedded below is an expirimental interface with Excalidraw. We reccomend using it on its official page, but if not you can use it below.
-        </p>
-        <input required type="file" accept="image/*" onChange={handleImageSelect} /><br /><br />
-        <br /><br />
-        {previewUrl && (
-          <img
-            className="listing-thumbnail"
-            src={previewUrl}
-            alt="Preview"
-          />
-        )}
-        <br /><br />
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Submitting..." : "Submit Listing"}
-        </button>
-      </form>
-    </>
+            <FileInput
+              required
+              label="Upload Thumbnail"
+              description="Recommended aspect ratio is 7:4 (350x200px)"
+              placeholder="Choose image..."
+              accept="image/*"
+              onChange={handleImageSelect}
+            />
+
+            {previewUrl && (
+              <Image
+                src={previewUrl}
+                alt="Preview"
+                radius="md"
+                maw={350}
+                mx="auto"
+              />
+            )}
+
+            <Button
+              type="submit"
+              fullWidth
+              color="cyan"
+              loading={isSubmitting}
+              size="md"
+            >
+              {isSubmitting ? "Submitting..." : "Submit Listing"}
+            </Button>
+          </Stack>
+        </form>
+      </Paper>
+    </Stack>
   );
 }
 

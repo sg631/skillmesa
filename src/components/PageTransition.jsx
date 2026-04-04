@@ -1,37 +1,29 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { Transition, Box } from "@mantine/core";
 
 export default function PageTransition({ children }) {
   const location = useLocation();
-  const [isFading, setIsFading] = useState(true);
+  const [mounted, setMounted] = useState(true);
 
   useEffect(() => {
-    // Trigger fade in whenever route changes
-    setIsFading(true);
-    const timeout = setTimeout(() => setIsFading(false), 500); // matches animation duration
-
+    setMounted(false);
+    const timeout = setTimeout(() => setMounted(true), 50);
     return () => clearTimeout(timeout);
-  }, [location]);
-
-  const pageStyle = {
-    animation: isFading ? "fadeInDown 0.5s ease-out" : "none",
-  };
+  }, [location.pathname]);
 
   return (
-    <div style={pageStyle}>
-      <style>{`
-        @keyframes fadeInDown {
-          0% {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-      {children}
-    </div>
+    <Transition
+      mounted={mounted}
+      transition="fade"
+      duration={400}
+      timingFunction="ease"
+    >
+      {(styles) => (
+        <Box style={styles}>
+          {children}
+        </Box>
+      )}
+    </Transition>
   );
 }

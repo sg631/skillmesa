@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import ListingComponent from "./ListingComponent.jsx";
 import { getDocs, query as makeQuery, limit, startAfter } from "firebase/firestore";
+import { Group, Button, Text, ScrollArea, Stack, Loader } from "@mantine/core";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 function ListingsPanel({
   query,
@@ -15,7 +17,6 @@ function ListingsPanel({
   const [currentPage, setCurrentPage] = useState(1);
   const [lastDoc, setLastDoc] = useState(null);
   const [hasNextPage, setHasNextPage] = useState(false);
-  const scrollRef = useRef(null);
 
   async function fetchPage(afterDoc = null) {
     if (!query) return;
@@ -53,7 +54,7 @@ function ListingsPanel({
   }, [query]);
 
   const handleNextPage = async (e) => {
-    e.preventDefault(); // ✅ prevent page jump
+    e.preventDefault();
     if (!lastDoc || !hasNextPage) return;
     setPageCursors((prev) => [...prev, lastDoc]);
     setCurrentPage((prev) => prev + 1);
@@ -61,7 +62,7 @@ function ListingsPanel({
   };
 
   const handlePrevPage = async (e) => {
-    e.preventDefault(); // ✅ prevent page jump
+    e.preventDefault();
     if (currentPage <= 1) return;
     const prevCursors = [...pageCursors];
     prevCursors.pop();
@@ -71,48 +72,53 @@ function ListingsPanel({
     await fetchPage(prevCursor);
   };
 
-  if (loading) return <p>Loading listings...</p>;
-  if (listings.length === 0) return <p>{emptyMessage}</p>;
+  if (loading) {
+    return (
+      <Group justify="center" py="xl">
+        <Loader color="cyan" />
+        <Text c="dimmed">Loading listings...</Text>
+      </Group>
+    );
+  }
+
+  if (listings.length === 0) {
+    return <Text ta="center" c="dimmed" py="xl">{emptyMessage}</Text>;
+  }
 
   return (
-    <div
-      className="listings-panel-wrapper"
-      style={{ height: "900px", overflow: "hidden", position: "relative" }}
-    >
-      <div className={className} style={{ height: "100%", position: "relative" }}>
-        <div
-          className="listings-scroll"
-          ref={scrollRef}
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            gap: "16px",
-            overflowX: "auto",
-            overflowY: "hidden",
-            height: "100%",
-            scrollBehavior: "smooth",
-          }}
-        >
+    <Stack gap="md" style={{ width: "100%" }}>
+      <ScrollArea type="hover" offsetScrollbars scrollbarSize={8}>
+        <Group gap="md" wrap="nowrap" align="flex-start" py="sm">
           {listings.map((listing) => (
             <ListingComponent key={listing.id} id={listing.id} {...listing} />
           ))}
-        </div>
+        </Group>
+      </ScrollArea>
 
-        {paginated && (
-          <div
-            className="pagination-controls"
+      {paginated && (
+        <Group justify="center" gap="sm">
+          <Button
+            variant="light"
+            color="cyan"
+            onClick={handlePrevPage}
+            disabled={currentPage === 1}
+            size="sm"
           >
-            <button onClick={handlePrevPage} disabled={currentPage === 1}>
-              ←
-            </button>
-            <span>Page {currentPage}</span>
-            <button onClick={handleNextPage} disabled={!hasNextPage}>
-              →
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+            <ChevronLeft size={16} />
+          </Button>
+          <Text size="sm" fw={500}>Page {currentPage}</Text>
+          <Button
+            variant="light"
+            color="cyan"
+            onClick={handleNextPage}
+            disabled={!hasNextPage}
+            size="sm"
+          >
+            <ChevronRight size={16} />
+          </Button>
+        </Group>
+      )}
+    </Stack>
   );
 }
 

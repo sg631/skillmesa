@@ -4,11 +4,11 @@ import { doc, getDoc, collection, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { LinkButton } from "../components/LinkElements.jsx";
 import ListingsPanel from '../components/ListingsPanel.jsx';
+import { Title, Text, Stack, Avatar, Code, Badge, Group, Loader } from "@mantine/core";
 
 const listingsCollection = collection(db, "listings");
 const listingsByOwnerQuery = (ownerUID) => query(listingsCollection, where("owner", "==", ownerUID));
 
-// Fetch profile data from Firestore
 async function fetchProfileData(userUID) {
   try {
     const userDocRef = doc(db, "users", userUID);
@@ -26,17 +26,16 @@ async function fetchProfileData(userUID) {
 }
 
 function ProfilePage() {
-  const { userUIDparam } = useParams(); // route param
+  const { userUIDparam } = useParams();
   const [profileData, setProfileData] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    let isMounted = true; // prevent updates on unmounted component
+    let isMounted = true;
 
     async function loadProfile() {
       setLoading(true);
       const data = await fetchProfileData(userUIDparam);
-
       if (isMounted) {
         setProfileData(data);
         setLoading(false);
@@ -44,28 +43,26 @@ function ProfilePage() {
     }
 
     if (userUIDparam) loadProfile();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [userUIDparam]);
 
   if (loading) {
     return (
-      <>
+      <Stack align="center" py="xl">
         <title>Skillmesa | Loading...</title>
-        <p>Loading profile...</p>
-      </>
+        <Loader color="cyan" />
+        <Text c="dimmed">Loading profile...</Text>
+      </Stack>
     );
   }
 
   if (!profileData) {
     return (
-      <>
+      <Stack align="center" py="xl">
         <title>Skillmesa | Not Found</title>
-        <h1>User not found</h1>
-        <p>The profile you’re looking for doesn’t exist.</p>
-      </>
+        <Title order={1}>User not found</Title>
+        <Text c="dimmed">The profile you're looking for doesn't exist.</Text>
+      </Stack>
     );
   }
 
@@ -73,33 +70,30 @@ function ProfilePage() {
   const ownerQuery = listingsByOwnerQuery(userUIDparam);
 
   return (
-    <>
+    <Stack align="center" gap="md" py="xl">
       <title>profile | skillmesa</title>
-      <div className="profile-container">
-        <h1>{displayName}</h1>
+      <Title order={1}>{displayName}</Title>
 
-        <span className="textsmall">
-          You may know them as <br />
-        </span>
-        <code className="acc">
-          {profileData.profilePic?.currentUrl && (
-            <img className="profilepic-inline" src={profileData.profilePic.currentUrl} alt="Profile" />
-          )}
+      <Text size="sm" c="dimmed">You may know them as</Text>
+      <Group gap="xs" align="center">
+        {profileData.profilePic?.currentUrl && (
+          <Avatar src={profileData.profilePic.currentUrl} size="sm" radius="xl" />
+        )}
+        <Badge variant="light" color="yellow" size="lg" radius="md">
           {profileData.username || "N/A"}
-        </code>
+        </Badge>
+      </Group>
 
-        <p>Bio: {profileData.bio || "No bio yet."}</p>
+      <Text>Bio: {profileData.bio || "No bio yet."}</Text>
 
-        <h2>Listings</h2>
-        <ListingsPanel
-          query={ownerQuery}
-          size={5}
-          emptyMessage="This person has no listings yet"
-          paginated={true}
-        />
-      </div>
-
-    </>
+      <Title order={2}>Listings</Title>
+      <ListingsPanel
+        query={ownerQuery}
+        size={5}
+        emptyMessage="This person has no listings yet"
+        paginated={true}
+      />
+    </Stack>
   );
 }
 

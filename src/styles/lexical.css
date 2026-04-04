@@ -1,0 +1,45 @@
+.text-editor {
+  border: 1px solid var(--mantine-color-gray-4);
+  border-radius: var(--mantine-radius-md);
+  width: 100%;
+  max-width: 800px;
+  background: var(--mantine-color-body);
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-container {
+  flex: 1;
+  min-height: 200px;
+  padding: 1em;
+}
+
+.editor-input {
+  outline: none;
+  min-height: 200px;
+  color: var(--mantine-color-text);
+}
+
+.editor-placeholder {
+  color: var(--mantine-color-dimmed);
+  pointer-events: none;
+  transform: translateY(-200px);
+}
+
+a:has(span[data-lexical-text=true]) {
+  color: var(--mantine-color-cyan-7);
+}
+a:has(span[data-lexical-text=true]):hover::before {
+  color: var(--mantine-color-cyan-4);
+  content: "(CTRL+Click to open link) ";
+  white-space: nowrap;
+  font-style: italic;
+  position: absolute;
+  margin-top: 20px;
+}
+
+/* Algolia highlight — used by react-instantsearch Highlight component */
+.ais-Highlight-highlighted {
+  background: var(--mantine-color-cyan-2);
+  font-style: normal;
+}

@@ -1,13 +1,10 @@
 import React from "react";
 import { useParams } from "react-router-dom";
-import { doc, getDoc, collection, query, where } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { LinkButton } from "../components/LinkElements.jsx";
+import { Title, Text, Stack, Avatar, Badge, Group, Paper, Loader, Button } from "@mantine/core";
 
-const listingsCollection = collection(db, "listings");
-const listingsByOwnerQuery = (ownerUID) => query(listingsCollection, where("owner", "==", ownerUID));
-
-// Fetch profile data from Firestore
 async function fetchProfileData(userUID) {
   try {
     const userDocRef = doc(db, "users", userUID);
@@ -24,18 +21,17 @@ async function fetchProfileData(userUID) {
   }
 }
 
-function ProfilePage() {
-  const { userUIDparam } = useParams(); // route param
+function ContactPage() {
+  const { userUIDparam } = useParams();
   const [profileData, setProfileData] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    let isMounted = true; // prevent updates on unmounted component
+    let isMounted = true;
 
     async function loadProfile() {
       setLoading(true);
       const data = await fetchProfileData(userUIDparam);
-
       if (isMounted) {
         setProfileData(data);
         setLoading(false);
@@ -43,53 +39,69 @@ function ProfilePage() {
     }
 
     if (userUIDparam) loadProfile();
-
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [userUIDparam]);
 
   if (loading) {
     return (
-      <>
+      <Stack align="center" py="xl">
         <title>Skillmesa | Loading...</title>
-        <p>Loading profile...</p>
-      </>
+        <Loader color="cyan" />
+      </Stack>
     );
   }
 
   if (!profileData) {
     return (
-      <>
+      <Stack align="center" py="xl">
         <title>Skillmesa | Not Found</title>
-        <h1>User not found</h1>
-        <p>The profile you’re looking for doesn’t exist.</p>
-      </>
+        <Title order={1}>User not found</Title>
+        <Text c="dimmed">The profile you're looking for doesn't exist.</Text>
+      </Stack>
     );
   }
 
   const displayName = profileData.displayName || "Unnamed User";
-  const ownerQuery = listingsByOwnerQuery(userUIDparam);
 
   return (
-    <>
+    <Stack align="center" gap="lg" py="xl">
       <title>contacts | skillmesa</title>
-      <div className="profile-container">
-        <h1>{displayName}</h1>
-        <code className="acc">
-          {profileData.profilePic?.currentUrl && (
-            <img className="profilepic-inline" src={profileData.profilePic.currentUrl} alt="Profile" />
-          )}
+      <Title order={1}>{displayName}</Title>
+
+      <Group gap="xs" align="center">
+        {profileData.profilePic?.currentUrl && (
+          <Avatar src={profileData.profilePic.currentUrl} size="sm" radius="xl" />
+        )}
+        <Badge variant="light" color="yellow" size="lg" radius="md">
           {profileData.username || "N/A"}
-        </code>
-        <br />
-        <span className="emaildisplay">{profileData.contact.email}</span>
-        <LinkButton to={"mailto:" + profileData.contact.email}>Send Email</LinkButton>
-        <span className="phonenumdisplay">{profileData.contact.phone || "No attached phone number"}</span>
-        <button disabled>Chat (COMING SOON)</button>
-      </div>
-    </>
+        </Badge>
+      </Group>
+
+      <Paper shadow="sm" p="xl" radius="md" withBorder maw={500} w="100%">
+        <Stack gap="md">
+          <div>
+            <Text size="sm" c="dimmed">Email</Text>
+            <Text size="xl" fw={500}>{profileData.contact?.email || "No email"}</Text>
+          </div>
+          <LinkButton to={"mailto:" + (profileData.contact?.email || "")} fullWidth>
+            Send Email
+          </LinkButton>
+        </Stack>
+      </Paper>
+
+      <Paper shadow="sm" p="xl" radius="md" withBorder maw={500} w="100%">
+        <Stack gap="md">
+          <div>
+            <Text size="sm" c="dimmed">Phone number</Text>
+            <Text size="xl" fw={500}>{profileData.contact?.phone || "No attached phone number"}</Text>
+          </div>
+          <Button disabled fullWidth variant="light">
+            Chat (COMING SOON)
+          </Button>
+        </Stack>
+      </Paper>
+    </Stack>
   );
 }
 
-export default ProfilePage;
+export default ContactPage;

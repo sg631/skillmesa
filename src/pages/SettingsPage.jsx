@@ -1,35 +1,74 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { LinkButton } from '../components/LinkElements.jsx';
-import { doc, getDoc, collection, query, where } from "firebase/firestore";
-import { db } from "../firebase";
-
+import { Title, Text, TextInput, Textarea, PasswordInput, Button, Stack, Paper, FileInput, Divider, SegmentedControl, Group, useMantineColorScheme, useComputedColorScheme, Center } from '@mantine/core';
+import { Sun, Moon } from 'lucide-react';
 
 function SettingsPage() {
+  const { setColorScheme } = useMantineColorScheme();
+  const computedColorScheme = useComputedColorScheme('light');
+
   return (
-    <>
-      <title>coming soon | skillmesa</title>
-      <h1>(DEFUNCT) Settings</h1>
-        <h2 className='textmedium'>Account Details</h2>
-        <textarea placeholder="loading bio.." className="textsmall"></textarea><br></br><button className='texttiny'>save bio</button>
-        <br></br><br></br>
-        <input type="file"></input><br></br><br></br><button className='texttiny'>upload profile picture</button>
-        <br></br><br></br>
-        <input type="text" placeholder="loading username.." className="textsmall"></input>  <button className='texttiny'>save username</button>
-        <br></br>
-        <input type="text" placeholder="loading display name.." className="textsmall"></input>  <button className='texttiny'>save display name</button>
-        <br></br>
-        <input type="date" className='textsmall'></input>  <button className='texttiny'>save birthday</button>
-        <h2 className='textmedium'>Contact Info</h2>
-        <input type="text" placeholder="loading email.." className="textsmall"></input>  <button className='texttiny'>save email</button>
-        <br></br>
-        <input type="text" placeholder="loading phone number.." className="textsmall"></input>  <button className='texttiny'>save phone number</button>
-        <h2 className='textmedium'>Security</h2>
-        <input type="password" placeholder="current password.." className="textsmall"></input><br></br>
-        <input type="password" placeholder="new password.." className="textsmall"></input><br></br>
-        <input type="password" placeholder="confirm new password.." className="textsmall"></input><br/><br/><button className='texttiny'>change password</button>
-        <br></br><br></br>
-    </>
+    <Stack align="center" gap="md" py="xl" maw={500} mx="auto">
+      <title>settings | skillmesa</title>
+      <Title order={1}>(DEFUNCT) Settings</Title>
+
+      <Paper shadow="sm" p="xl" radius="lg" w="100%" withBorder>
+        <Stack gap="md">
+          <Title order={3}>Appearance</Title>
+          <Text size="sm" c="dimmed">Choose your preferred color scheme</Text>
+          <SegmentedControl
+            value={computedColorScheme}
+            onChange={setColorScheme}
+            fullWidth
+            color="cyan"
+            data={[
+              { label: (<Center inline gap={6}><Sun size={16} /> Light</Center>), value: 'light' },
+              { label: (<Center inline gap={6}><Moon size={16} /> Dark</Center>), value: 'dark' },
+            ]}
+          />
+        </Stack>
+      </Paper>
+
+      <Paper shadow="sm" p="xl" radius="lg" w="100%" withBorder>
+        <Stack gap="md">
+          <Title order={3}>Account Details</Title>
+          <Textarea placeholder="loading bio.." minRows={3} />
+          <Button size="xs" variant="light">save bio</Button>
+
+          <FileInput placeholder="Upload profile picture" accept="image/*" />
+          <Button size="xs" variant="light">upload profile picture</Button>
+
+          <TextInput placeholder="loading username.." />
+          <Button size="xs" variant="light">save username</Button>
+
+          <TextInput placeholder="loading display name.." />
+          <Button size="xs" variant="light">save display name</Button>
+
+          <TextInput type="date" label="Birthday" />
+          <Button size="xs" variant="light">save birthday</Button>
+        </Stack>
+      </Paper>
+
+      <Paper shadow="sm" p="xl" radius="lg" w="100%" withBorder>
+        <Stack gap="md">
+          <Title order={3}>Contact Info</Title>
+          <TextInput placeholder="loading email.." />
+          <Button size="xs" variant="light">save email</Button>
+
+          <TextInput placeholder="loading phone number.." />
+          <Button size="xs" variant="light">save phone number</Button>
+        </Stack>
+      </Paper>
+
+      <Paper shadow="sm" p="xl" radius="lg" w="100%" withBorder>
+        <Stack gap="md">
+          <Title order={3}>Security</Title>
+          <PasswordInput placeholder="current password.." />
+          <PasswordInput placeholder="new password.." />
+          <PasswordInput placeholder="confirm new password.." />
+          <Button size="xs" variant="light">change password</Button>
+        </Stack>
+      </Paper>
+    </Stack>
   );
 }
 

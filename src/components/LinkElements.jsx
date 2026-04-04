@@ -1,23 +1,29 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Button, Image } from '@mantine/core';
 
-// Button that acts as a link
-function LinkButton({ to, className, disabled, children }) {
-    return (
-        <Link to={to} className='link-button'>
-            <button disabled={disabled} className={className}>
-                {children}
-            </button>
-        </Link>
-    );
-}
-function LinkImage({ to, src, width, height, alt, classes}) {
-    return (
-        <Link to={to} className='link-image'>
-            <img src={src} alt={alt} width={width} height={height} className={classes} />
-        </Link>
-    );
+function LinkButton({ to, className, disabled, children, variant = "light", color = "cyan", ...rest }) {
+  return (
+    <Link to={to} style={{ textDecoration: 'none' }}>
+      <Button
+        disabled={disabled}
+        variant={variant}
+        color={color}
+        className={className}
+        {...rest}
+      >
+        {children}
+      </Button>
+    </Link>
+  );
 }
 
-// Exporting the components
+function LinkImage({ to, src, width, height, alt, classes }) {
+  return (
+    <Link to={to} style={{ display: 'inline-flex', alignItems: 'center' }}>
+      <Image src={src} alt={alt} w={width} h={height} className={classes} fit="contain" />
+    </Link>
+  );
+}
+
 export { LinkImage, LinkButton };
