@@ -117,7 +117,7 @@ export default function TextEditorToolbar() {
           />
           <Group justify="flex-end">
             <Button variant="subtle" color="gray" onClick={() => setLinkModalOpen(false)}>Cancel</Button>
-            <Button color="cyan" onClick={handleLinkSubmit}>Insert</Button>
+            <Button onClick={handleLinkSubmit}>Insert</Button>
           </Group>
         </Stack>
       </Modal>
@@ -135,7 +135,7 @@ export default function TextEditorToolbar() {
           <Text size="sm" c="cyan" style={{ wordBreak: 'break-all' }}>{confirmLink}</Text>
           <Group justify="flex-end">
             <Button variant="subtle" color="gray" onClick={() => setConfirmLink(null)}>Cancel</Button>
-            <Button color="cyan" onClick={() => { window.open(confirmLink, "_blank"); setConfirmLink(null); }}>Open</Button>
+            <Button onClick={() => { window.open(confirmLink, "_blank"); setConfirmLink(null); }}>Open</Button>
           </Group>
         </Stack>
       </Modal>

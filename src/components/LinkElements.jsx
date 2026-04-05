@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Image } from '@mantine/core';
 
-function LinkButton({ to, className, disabled, children, variant = "light", color = "cyan", ...rest }) {
+function LinkButton({ to, className, disabled, children, variant = "default", color, ...rest }) {
   return (
     <Link to={to} style={{ textDecoration: 'none' }}>
       <Button

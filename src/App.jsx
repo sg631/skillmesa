@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
-import { Group, Text, Anchor, Box, Avatar, ActionIcon, useMantineColorScheme, useComputedColorScheme } from '@mantine/core';
+import { Group, Text, Anchor, Box, Avatar, ActionIcon, Indicator, useMantineColorScheme, useComputedColorScheme, Drawer, Burger, Stack, Divider } from '@mantine/core';
 
 import HomePage from './pages/HomePage';
 import StartingPage from './pages/StartingPage';
@@ -15,126 +15,200 @@ import ManagePage from './pages/ManagePage';
 import ExplorePage from './pages/ExplorePage.jsx';
 import ListingDetailPage from './pages/ListingDetailPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
+import NotificationsPage from './pages/NotificationsPage.jsx';
+import ChatPage from './pages/ChatPage.jsx';
+import InboxPage from './pages/InboxPage.jsx';
+import AliasRedirectPage from './pages/AliasRedirectPage.jsx';
 
 import { LinkImage } from './components/LinkElements';
 import PageTransition from './components/PageTransition';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from "./firebase.js";
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { auth, db } from "./firebase.js";
 import { Bell, Settings, UserCircle, Sun, Moon } from 'lucide-react';
-
-import './styles/blobs.css';
 
 function App() {
   const [user, setUser] = React.useState(undefined);
+  const [unreadCount, setUnreadCount] = React.useState(0);
+  const [menuOpen, setMenuOpen] = React.useState(false);
   const { setColorScheme } = useMantineColorScheme();
   const computedColorScheme = useComputedColorScheme('light');
   const isDark = computedColorScheme === 'dark';
 
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
+    const unsubAuth = onAuthStateChanged(auth, (u) => {
       setUser(u || null);
     });
-    return unsubscribe;
+    return unsubAuth;
   }, []);
+
+  // Track unread notifications count
+  React.useEffect(() => {
+    if (!user) { setUnreadCount(0); return; }
+
+    const q = query(
+      collection(db, "notifications", user.uid, "items"),
+      where("read", "==", false)
+    );
+    const unsub = onSnapshot(q, (snap) => setUnreadCount(snap.size), () => {});
+    return () => unsub();
+  }, [user]);
 
   const toggleColorScheme = () => {
     setColorScheme(isDark ? 'light' : 'dark');
   };
 
+  const navBg     = isDark ? 'var(--mantine-color-dark-7)' : '#ffffff';
+  const navBorder = isDark ? 'var(--mantine-color-dark-5)' : 'var(--mantine-color-gray-2)';
+  const pageBg    = isDark ? 'var(--mantine-color-dark-8)' : 'var(--mantine-color-gray-0)';
+  const footerBg  = isDark ? 'var(--mantine-color-dark-7)' : '#ffffff';
+
   return (
     <Router>
-      <Box
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          background: isDark ? 'var(--mantine-color-dark-7)' : '#dfffff',
-          transition: 'background 0.3s',
-        }}
-      >
+      <Box style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: pageBg }}>
+
         {/* Navigation */}
         <Box
           component="nav"
           style={{
             width: '100%',
-            height: 65,
+            height: 60,
             display: 'flex',
-            justifyContent: 'center',
+            justifyContent: 'space-between',
             alignItems: 'center',
-            gap: '1.5rem',
+            paddingInline: '1.5rem',
             position: 'sticky',
             top: 0,
-            left: 0,
-            isolation: 'isolate',
-            fontSize: '1.2em',
-            background: isDark ? 'var(--mantine-color-dark-6)' : 'rgb(157, 247, 255)',
-            boxShadow: isDark ? '0 0px 20px rgba(0, 196, 240, 0.15)' : '0 0px 20px rgb(157, 247, 255)',
-            zIndex: 9999,
-            transition: 'background 0.3s, box-shadow 0.3s',
+            background: navBg,
+            borderBottom: `1px solid ${navBorder}`,
+            zIndex: 100,
           }}
         >
-          <LinkImage to="/" src="/assets/logos/skillmesa.svg" width={90} height={90} alt="Skillmesa Logo" />
-          <Anchor component={Link} to="/home" fw={500} underline="never" c={isDark ? 'cyan.2' : 'dark'}>
-            dashboard
-          </Anchor>
-          <Anchor component={Link} to="/explore" fw={500} underline="never" c={isDark ? 'cyan.2' : 'dark'}>
-            explore
-          </Anchor>
-          <Anchor component={Link} to="/comingsoon" fw={500} underline="never" c={isDark ? 'cyan.2' : 'dark'}>
-            opportunities
-          </Anchor>
-          {user ? (
-            <Link to="/profile">
-              <Avatar
-                src={user.photoURL}
-                size={36}
-                radius="xl"
-                style={{
-                  boxShadow: isDark
-                    ? '0 0 8px rgba(0, 196, 240, 0.4)'
-                    : '0 0 5px rgb(204, 221, 243)',
-                }}
-              />
-            </Link>
-          ) : (
-            <ActionIcon component={Link} to="/signon" variant="subtle" color={isDark ? 'cyan' : 'dark'} size="lg" aria-label="Sign In">
-              <UserCircle size={24} />
+          <LinkImage to="/" src="/assets/logos/skillmesa.svg" width={80} height={80} alt="Skillmesa Logo" />
+
+          {/* Desktop nav links */}
+          <Group gap="xs" align="center" visibleFrom="sm">
+            <Anchor component={Link} to="/home" fw={500} underline="never" c="inherit" size="sm" className="nav-link">Dashboard</Anchor>
+            <Anchor component={Link} to="/explore" fw={500} underline="never" c="inherit" size="sm" className="nav-link">Explore</Anchor>
+            <Anchor component={Link} to="/inbox" fw={500} underline="never" c="inherit" size="sm" className="nav-link">Inbox</Anchor>
+            <Anchor component={Link} to="/explore" fw={500} underline="never" c="inherit" size="sm" className="nav-link">Opportunities</Anchor>
+          </Group>
+
+          <Group gap={4} align="center">
+            {/* Profile — desktop only */}
+            <Box visibleFrom="sm">
+              {user ? (
+                <Link to="/profile">
+                  <Avatar src={user.photoURL} size={32} radius="xl" />
+                </Link>
+              ) : (
+                <ActionIcon component={Link} to="/signon" variant="subtle" color="gray" size="lg" aria-label="Sign In">
+                  <UserCircle size={20} />
+                </ActionIcon>
+              )}
+            </Box>
+
+            {/* Bell — always visible */}
+            <Indicator color="red" size={8} offset={4} disabled={unreadCount === 0} processing={unreadCount > 0}>
+              <ActionIcon component={Link} to="/notifications" variant="subtle" color="gray" size="lg" aria-label="Notifications">
+                <Bell size={18} />
+              </ActionIcon>
+            </Indicator>
+
+            {/* Settings — desktop only */}
+            <Box visibleFrom="sm">
+              <ActionIcon component={Link} to="/settings" variant="subtle" color="gray" size="lg" aria-label="Settings">
+                <Settings size={18} />
+              </ActionIcon>
+            </Box>
+
+            {/* Dark mode — always visible */}
+            <ActionIcon variant="subtle" color="gray" onClick={toggleColorScheme} size="lg" aria-label="Toggle dark mode">
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </ActionIcon>
-          )}
-          <ActionIcon component={Link} to="/notifications" variant="subtle" color={isDark ? 'cyan' : 'dark'} size="lg" aria-label="Notifications">
-            <Bell size={22} />
-          </ActionIcon>
-          <ActionIcon component={Link} to="/settings" variant="subtle" color={isDark ? 'cyan' : 'dark'} size="lg" aria-label="Settings">
-            <Settings size={22} />
-          </ActionIcon>
 
-          {/* Dark mode toggle */}
-          <ActionIcon
-            variant="subtle"
-            color={isDark ? 'cyan' : 'dark'}
-            onClick={toggleColorScheme}
-            size="lg"
-            aria-label="Toggle dark mode"
+            {/* Hamburger — mobile only */}
+            <Box hiddenFrom="sm">
+              <Burger opened={menuOpen} onClick={() => setMenuOpen(o => !o)} size="sm" aria-label="Open menu" />
+            </Box>
+          </Group>
+
+          {/* Mobile drawer */}
+          <Drawer
+            opened={menuOpen}
+            onClose={() => setMenuOpen(false)}
+            title="Menu"
+            position="right"
+            size="xs"
+            styles={{ body: { paddingTop: 8 } }}
           >
-            {isDark ? <Sun size={20} /> : <Moon size={20} />}
-          </ActionIcon>
-        </Box>
+            <Stack gap="sm">
+              {user ? (
+                <Group
+                  component={Link} to="/profile"
+                  onClick={() => setMenuOpen(false)}
+                  gap="sm"
+                  style={{ textDecoration: 'none', color: 'inherit', padding: '4px 0' }}
+                >
+                  <Avatar src={user.photoURL} size={40} radius="xl" />
+                  <Box>
+                    <Text fw={600} size="sm">{user.displayName || 'Profile'}</Text>
+                    <Text size="xs" c="dimmed">{user.email}</Text>
+                  </Box>
+                </Group>
+              ) : (
+                <ActionIcon
+                  component={Link} to="/signon"
+                  onClick={() => setMenuOpen(false)}
+                  variant="default" size="lg" w="100%" aria-label="Sign In"
+                  style={{ justifyContent: 'flex-start', paddingLeft: 12, gap: 8, height: 40 }}
+                >
+                  <UserCircle size={18} />
+                  <Text size="sm" fw={500}>Sign in</Text>
+                </ActionIcon>
+              )}
 
-        {/* Blob background */}
-        <div className="blobs">
-          <div className="blob"></div>
-          <div className="blob"></div>
-          <div className="blob"></div>
-          <div className="blob"></div>
-          <div className="blob"></div>
-          <div className="blob"></div>
-        </div>
+              <Divider />
+
+              <Stack gap={2}>
+                {[
+                  { to: '/home',    label: 'Dashboard' },
+                  { to: '/explore', label: 'Explore' },
+                  { to: '/inbox',   label: 'Inbox' },
+                  { to: '/explore', label: 'Opportunities' },
+                ].map(({ to, label }) => (
+                  <Anchor
+                    key={label}
+                    component={Link} to={to}
+                    onClick={() => setMenuOpen(false)}
+                    underline="never" c="inherit" fw={500} size="sm"
+                    style={{ padding: '9px 8px', display: 'block', borderRadius: 6 }}
+                    className="nav-link"
+                  >
+                    {label}
+                  </Anchor>
+                ))}
+              </Stack>
+
+              <Divider />
+
+              <Stack gap={2}>
+                <Anchor component={Link} to="/notifications" onClick={() => setMenuOpen(false)} underline="never" c="inherit" fw={500} size="sm" style={{ padding: '9px 8px', display: 'block', borderRadius: 6 }} className="nav-link">
+                  Notifications
+                </Anchor>
+                <Anchor component={Link} to="/settings" onClick={() => setMenuOpen(false)} underline="never" c="inherit" fw={500} size="sm" style={{ padding: '9px 8px', display: 'block', borderRadius: 6 }} className="nav-link">
+                  Settings
+                </Anchor>
+              </Stack>
+            </Stack>
+          </Drawer>
+        </Box>
 
         {/* Main content */}
         <Box style={{ flex: 1 }}>
           <PageTransition>
             {user === undefined ? (
-              <Text ta="center" size="lg" py="xl">Loading.. Please check your internet if this takes too long.</Text>
+              <Text ta="center" size="sm" c="dimmed" py="xl">Loading…</Text>
             ) : (
               <Routes>
                 <Route path="*" element={<NotFoundPage />} />
@@ -143,17 +217,18 @@ function App() {
                 <Route path="/comingsoon" element={<ComingSoonPage />} />
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/profile/:userUIDparam" element={<ProfilePage />} />
-                <Route path="/notifications" element={<ComingSoonPage />} />
+                <Route path="/notifications" element={user ? <NotificationsPage /> : <Navigate to="/signon" />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/explore" element={<ExplorePage />} />
-                <Route
-                  path="/create"
-                  element={user ? <CreateListingPage /> : <Navigate to="/signon" />}
-                />
+                <Route path="/create" element={user ? <CreateListingPage /> : <Navigate to="/signon" />} />
                 <Route path="/listing/:listingId" element={<ListingDetailPage />} />
                 <Route path="/contact/:userUIDparam" element={<ContactPage />} />
                 <Route path="/share/:listingId" element={<OpenSharedLinkPage />} />
+                <Route path="/s/:alias" element={<AliasRedirectPage />} />
                 <Route path="/manage/:listingId" element={<ManagePage />} />
+                <Route path="/chat/:otherUID" element={user ? <ChatPage /> : <Navigate to="/signon" />} />
+                <Route path="/inbox" element={user ? <InboxPage /> : <Navigate to="/signon" />} />
+                <Route path="/inbox/:otherUID" element={user ? <InboxPage /> : <Navigate to="/signon" />} />
                 <Route
                   path="/profile"
                   element={user ? <Navigate to={"/profile/" + user.uid} /> : <Navigate to="/signon" />}
@@ -168,14 +243,12 @@ function App() {
           component="footer"
           style={{
             width: '100%',
-            height: 60,
+            height: 52,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            background: isDark ? 'var(--mantine-color-dark-6)' : 'rgba(112, 238, 255, 0.1)',
-            backdropFilter: 'blur(3px)',
-            zIndex: 10,
-            transition: 'background 0.3s',
+            background: footerBg,
+            borderTop: `1px solid ${navBorder}`,
           }}
         >
           <Text size="xs" c="dimmed">

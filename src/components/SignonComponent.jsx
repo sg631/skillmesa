@@ -186,7 +186,7 @@ function SignonComponent({ mode = "dual", width, height }) {
                 value={signUpData.password}
                 onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
               />
-              <Button type="submit" fullWidth color="cyan">
+              <Button type="submit" fullWidth>
                 Sign Up
               </Button>
             </Stack>
@@ -211,7 +211,7 @@ function SignonComponent({ mode = "dual", width, height }) {
                 value={loginData.password}
                 onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
               />
-              <Button type="submit" fullWidth color="cyan">
+              <Button type="submit" fullWidth>
                 Log In
               </Button>
             </Stack>

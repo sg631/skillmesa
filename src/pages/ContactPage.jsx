@@ -1,102 +1,114 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { LinkButton } from "../components/LinkElements.jsx";
-import { Title, Text, Stack, Avatar, Badge, Group, Paper, Loader, Button } from "@mantine/core";
+import {
+  Title, Text, Stack, Avatar, Group, Paper, Loader, Button, Box,
+} from "@mantine/core";
+import { Mail, MessageSquare } from "lucide-react";
 
-async function fetchProfileData(userUID) {
+async function fetchProfileData(uid) {
   try {
-    const userDocRef = doc(db, "users", userUID);
-    const userSnap = await getDoc(userDocRef);
-    if (userSnap.exists()) {
-      return userSnap.data();
-    } else {
-      console.warn("No user found with UID:", userUID);
-      return null;
-    }
-  } catch (error) {
-    console.error("Error fetching user profile:", error);
+    const snap = await getDoc(doc(db, "users", uid));
+    return snap.exists() ? snap.data() : null;
+  } catch (err) {
+    console.error("Error fetching profile:", err);
     return null;
   }
 }
 
 function ContactPage() {
   const { userUIDparam } = useParams();
+  const navigate = useNavigate();
   const [profileData, setProfileData] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading]         = React.useState(true);
 
   React.useEffect(() => {
     let isMounted = true;
-
-    async function loadProfile() {
+    async function load() {
       setLoading(true);
       const data = await fetchProfileData(userUIDparam);
-      if (isMounted) {
-        setProfileData(data);
-        setLoading(false);
-      }
+      if (isMounted) { setProfileData(data); setLoading(false); }
     }
-
-    if (userUIDparam) loadProfile();
+    if (userUIDparam) load();
     return () => { isMounted = false; };
   }, [userUIDparam]);
 
   if (loading) {
     return (
-      <Stack align="center" py="xl">
-        <title>Skillmesa | Loading...</title>
-        <Loader color="cyan" />
-      </Stack>
+      <Box py="xl" style={{ display: 'flex', justifyContent: 'center' }}>
+        <Loader color="gray" size="sm" />
+      </Box>
     );
   }
 
   if (!profileData) {
     return (
       <Stack align="center" py="xl">
-        <title>Skillmesa | Not Found</title>
-        <Title order={1}>User not found</Title>
+        <Title order={2}>User not found</Title>
         <Text c="dimmed">The profile you're looking for doesn't exist.</Text>
       </Stack>
     );
   }
 
   const displayName = profileData.displayName || "Unnamed User";
+  const email       = profileData.contact?.email;
+  const phone       = profileData.contact?.phone;
 
   return (
-    <Stack align="center" gap="lg" py="xl">
-      <title>contacts | skillmesa</title>
-      <Title order={1}>{displayName}</Title>
+    <Stack align="center" gap="lg" py="xl" px="md" maw={500} mx="auto" className="page-enter">
+      <title>contact | skillmesa</title>
 
-      <Group gap="xs" align="center">
+      <Group gap="sm">
         {profileData.profilePic?.currentUrl && (
-          <Avatar src={profileData.profilePic.currentUrl} size="sm" radius="xl" />
+          <Avatar src={profileData.profilePic.currentUrl} size="md" radius="xl" />
         )}
-        <Badge variant="light" color="yellow" size="lg" radius="md">
-          {profileData.username || "N/A"}
-        </Badge>
+        <Title order={2}>{displayName}</Title>
       </Group>
 
-      <Paper shadow="sm" p="xl" radius="md" withBorder maw={500} w="100%">
-        <Stack gap="md">
-          <div>
-            <Text size="sm" c="dimmed">Email</Text>
-            <Text size="xl" fw={500}>{profileData.contact?.email || "No email"}</Text>
-          </div>
-          <LinkButton to={"mailto:" + (profileData.contact?.email || "")} fullWidth>
-            Send Email
-          </LinkButton>
-        </Stack>
-      </Paper>
+      {/* Email */}
+      {email ? (
+        <Paper withBorder p="xl" radius="md" w="100%">
+          <Stack gap="sm">
+            <Text size="xs" c="dimmed" fw={500} tt="uppercase">Email</Text>
+            <Text fw={500}>{email}</Text>
+            <Button
+              variant="default"
+              leftSection={<Mail size={14} />}
+              onClick={() => window.open(`mailto:${email}`)}
+              fullWidth
+            >
+              Send Email
+            </Button>
+          </Stack>
+        </Paper>
+      ) : (
+        <Paper withBorder p="xl" radius="md" w="100%">
+          <Text size="sm" c="dimmed">No email listed.</Text>
+        </Paper>
+      )}
 
-      <Paper shadow="sm" p="xl" radius="md" withBorder maw={500} w="100%">
-        <Stack gap="md">
-          <div>
-            <Text size="sm" c="dimmed">Phone number</Text>
-            <Text size="xl" fw={500}>{profileData.contact?.phone || "No attached phone number"}</Text>
-          </div>
-          <Button disabled fullWidth variant="light">
-            Chat (COMING SOON)
+      {/* Phone */}
+      {phone && (
+        <Paper withBorder p="xl" radius="md" w="100%">
+          <Stack gap="sm">
+            <Text size="xs" c="dimmed" fw={500} tt="uppercase">Phone</Text>
+            <Text fw={500}>{phone}</Text>
+          </Stack>
+        </Paper>
+      )}
+
+      {/* Chat */}
+      <Paper withBorder p="xl" radius="md" w="100%">
+        <Stack gap="sm">
+          <Text size="xs" c="dimmed" fw={500} tt="uppercase">Chat</Text>
+          <Text size="sm" c="dimmed">Send direct messages through Skillmesa.</Text>
+          <Button
+            leftSection={<MessageSquare size={14} />}
+            onClick={() => navigate(`/chat/${userUIDparam}`)}
+            fullWidth
+          >
+            Open Chat
           </Button>
         </Stack>
       </Paper>

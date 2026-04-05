@@ -50,7 +50,7 @@ function ProfilePage() {
     return (
       <Stack align="center" py="xl">
         <title>Skillmesa | Loading...</title>
-        <Loader color="cyan" />
+        <Loader color="gray" />
         <Text c="dimmed">Loading profile...</Text>
       </Stack>
     );
@@ -79,7 +79,7 @@ function ProfilePage() {
         {profileData.profilePic?.currentUrl && (
           <Avatar src={profileData.profilePic.currentUrl} size="sm" radius="xl" />
         )}
-        <Badge variant="light" color="yellow" size="lg" radius="md">
+        <Badge variant="outline" color="gray" size="md">
           {profileData.username || "N/A"}
         </Badge>
       </Group>

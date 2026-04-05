@@ -1,12 +1,117 @@
-/* Global resets — everything else is handled by Mantine */
+/* ============================================================
+   SKILLMESA — Global Styles
 
-html, body, #root {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
+   SCOPE: Only things that cannot live in theme.js belong here:
+     • browser-native UI (scrollbars, selection)
+     • keyframe definitions
+     • utility classes (.blur-reveal, .page-enter, .shimmer)
+     • intentional subsets of Mantine components
+       (.listing-card — only some Cards should lift on hover)
+     • non-component patterns (.nav-link, .banner-*)
+
+   All interactive component styles (Button, ActionIcon, Input, Tabs)
+   are in theme.js via the Mantine Styles API with light-dark().
+   New components added via Mantine require zero additions here.
+   ============================================================ */
+
+/* ── Accent token ───────────────────────────────────────────── */
+/* Mirrors theme.js A constant. Change in both places if rebranding. */
+:root {
+  --accent-rgb: 165, 180, 252;
+  --accent-hex: #a5b4fc;
 }
 
-#root {
-  text-align: center;
+/* ── Reset ─────────────────────────────────────────────────── */
+html, body, #root { margin: 0; padding: 0; width: 100%; height: 100%; }
+
+/* Ensure body matches the dark page background (prevents flash on scroll overrun) */
+html[data-mantine-color-scheme="dark"] body { background-color: #09090b; }
+
+/* ── Scrollbar ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(128,128,128,0.25); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(128,128,128,0.45); }
+[data-mantine-color-scheme="dark"] ::-webkit-scrollbar-thumb       { background: rgba(var(--accent-rgb), 0.18); }
+[data-mantine-color-scheme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(var(--accent-rgb), 0.35); }
+
+/* ── Text selection ─────────────────────────────────────────── */
+::selection { background: rgba(0,0,0,0.10); color: inherit; }
+[data-mantine-color-scheme="dark"] ::selection { background: rgba(var(--accent-rgb), 0.22); }
+
+/* ── Keyframes ──────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  from { background-position: -600px 0; }
+  to   { background-position:  600px 0; }
+}
+
+/* ── Listing card hover lift ────────────────────────────────── */
+/* Intentionally a subset: only listing grid cards lift, not every Card. */
+.listing-card {
+  transition: box-shadow 0.25s ease, transform 0.25s cubic-bezier(0.34,1.2,0.64,1) !important;
+  will-change: transform;
+}
+.listing-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 36px rgba(0,0,0,0.09) !important;
+}
+[data-mantine-color-scheme="dark"] .listing-card:hover {
+  box-shadow: 0 14px 36px rgba(0,0,0,0.50), 0 0 0 1px rgba(var(--accent-rgb), 0.12) !important;
+}
+
+/* ── Nav link underline slide-in ────────────────────────────── */
+.nav-link { position: relative; transition: color 0.18s ease !important; }
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 50%;
+  width: 0; height: 1.5px;
+  background: currentColor;
+  border-radius: 99px;
+  transition: width 0.2s ease, left 0.2s ease;
+}
+.nav-link:hover::after { width: 100%; left: 0; }
+[data-mantine-color-scheme="dark"] .nav-link:hover        { color: var(--accent-hex) !important; }
+[data-mantine-color-scheme="dark"] .nav-link::after       { background: var(--accent-hex); }
+
+/* ── Blur-reveal utility ────────────────────────────────────── */
+.blur-reveal { filter: blur(4px); transition: filter 0.45s ease; cursor: default; user-select: none; }
+.blur-reveal:hover { filter: blur(0); }
+
+/* ── Page entrance ──────────────────────────────────────────── */
+.page-enter { animation: fadeInUp 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* ── Listing banner colors ──────────────────────────────────── */
+/* Light mode uses Mantine's auto-generated light-variant tints.      */
+/* Dark mode uses explicit RGBA + vibrant text for zinc-800 surfaces. */
+.banner-service { background: var(--mantine-color-orange-light); color: var(--mantine-color-orange-light-color); }
+.banner-class   { background: var(--mantine-color-blue-light);   color: var(--mantine-color-blue-light-color);   }
+.banner-online  { background: var(--mantine-color-violet-light); color: var(--mantine-color-violet-light-color); }
+.banner-offline { background: var(--mantine-color-teal-light);   color: var(--mantine-color-teal-light-color);   }
+.banner-zip     { background: var(--mantine-color-gray-light);   color: var(--mantine-color-gray-light-color);   }
+
+[data-mantine-color-scheme="dark"] .banner-service { background: rgba(194, 65,  12, 0.28); color: #fb923c; }
+[data-mantine-color-scheme="dark"] .banner-class   { background: rgba( 37, 99, 235, 0.25); color: #93c5fd; }
+[data-mantine-color-scheme="dark"] .banner-online  { background: rgba(124, 58, 237, 0.25); color: #c4b5fd; }
+[data-mantine-color-scheme="dark"] .banner-offline { background: rgba( 13,148, 136, 0.25); color: #5eead4; }
+[data-mantine-color-scheme="dark"] .banner-zip     { background: rgba( 82, 82,  91, 0.35); color: #a1a1aa; }
+
+/* ── Sticky sidebar — only activates on md+ ────────────────── */
+/* On mobile the Grid columns stack vertically, so sticky causes overlap. */
+.sticky-sidebar { position: sticky; top: 76px; }
+@media (max-width: 767px) { .sticky-sidebar { position: static; } }
+
+/* ── Shimmer skeleton ───────────────────────────────────────── */
+.shimmer {
+  background: linear-gradient(90deg, var(--mantine-color-gray-1) 25%, var(--mantine-color-gray-0) 50%, var(--mantine-color-gray-1) 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+[data-mantine-color-scheme="dark"] .shimmer {
+  background: linear-gradient(90deg, var(--mantine-color-dark-6) 25%, var(--mantine-color-dark-5) 50%, var(--mantine-color-dark-6) 75%);
+  background-size: 600px 100%;
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Title, Text, Stack, Image, Space } from '@mantine/core';
+import { Title, Text, Stack, Box } from '@mantine/core';
 import { LinkButton } from '../components/LinkElements.jsx';
 import CarouselElement from '../components/CarouselElement.jsx';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -20,29 +20,65 @@ function StartingPage() {
   const getStartedLink = checkedAuth ? (user ? "/home" : "/signon") : "/signon";
 
   return (
-    <Stack align="center" gap="lg" py="xl">
+    <Box
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 'calc(100vh - 112px)',
+        padding: '3rem 1rem',
+      }}
+    >
       <title>skillmesa</title>
-      <Image src="/assets/logos/skillmesa-large.png" alt="Skillmesa Logo" w={465} h={110} fit="contain" />
-      <Stack align="center" gap="xs" ta="center">
-        <Text size="xl" fw={500}>
-          Whether you're looking for opportunities, services, or knowledge in
+      <Stack align="center" gap="lg" maw={640} ta="center">
+        <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: '0.08em' }}>
+          Peer-to-peer skills marketplace
         </Text>
-        <CarouselElement>
-          <li><Title order={1} fz="3rem">coding</Title></li>
-          <li><Title order={1} fz="3rem">design</Title></li>
-          <li><Title order={1} fz="3rem">writing</Title></li>
-          <li><Title order={1} fz="3rem">music</Title></li>
-        </CarouselElement>
-        <Text>or more, Skillmesa is your platform to connect and thrive.</Text>
-        <Space h="xl" />
-        <Text size="xl" fw={500}>
-          From babysitting to garden tending, and from homework help to SAT prep, we're here.
+
+        <Stack align="center" gap="xs">
+          <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700}>
+            Find skills in
+          </Title>
+          <CarouselElement>
+            <li>
+              <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
+                background: 'linear-gradient(to right, #9866f0, #75e4f8)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>coding</Title>
+            </li>
+            <li>
+              <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
+                background: 'linear-gradient(to right, #f96fad, #fcc361)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>design</Title>
+            </li>
+            <li>
+              <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
+                background: 'linear-gradient(to right, #39e4ae, #73a1ec)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>writing</Title>
+            </li>
+            <li>
+              <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
+                background: 'linear-gradient(to right, #ff8d50, #bf86f4)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>music</Title>
+            </li>
+          </CarouselElement>
+          <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700}>
+            and more
+          </Title>
+        </Stack>
+
+        <Text size="lg" c="dimmed" maw={480}>
+          From babysitting to SAT prep, from lawn care to tutoring — connect with people in your community.
         </Text>
+
+        <LinkButton to={getStartedLink} size="md" variant="filled">
+          Get started
+        </LinkButton>
       </Stack>
-      <LinkButton to={getStartedLink} size="lg">
-        Get Started
-      </LinkButton>
-    </Stack>
+    </Box>
   );
 }
 

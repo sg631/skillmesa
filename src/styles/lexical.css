@@ -27,10 +27,10 @@
 }
 
 a:has(span[data-lexical-text=true]) {
-  color: var(--mantine-color-cyan-7);
+  color: var(--accent-hex);
 }
 a:has(span[data-lexical-text=true]):hover::before {
-  color: var(--mantine-color-cyan-4);
+  color: rgba(var(--accent-rgb), 0.7);
   content: "(CTRL+Click to open link) ";
   white-space: nowrap;
   font-style: italic;
@@ -40,6 +40,6 @@ a:has(span[data-lexical-text=true]):hover::before {
 
 /* Algolia highlight — used by react-instantsearch Highlight component */
 .ais-Highlight-highlighted {
-  background: var(--mantine-color-cyan-2);
+  background: rgba(var(--accent-rgb), 0.22);
   font-style: normal;
 }

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run:*)",
+      "Bash(npm ls:*)",
+      "Bash(npm install:*)",
+      "*",
+      "Bash(grep -E \"\\\\.jsx$|\\\\.js$\")"
+    ]
+  }
+}

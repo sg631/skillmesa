@@ -15,7 +15,6 @@ export default function showAlert(message, children = null) {
   if (!children && typeof message === "string") {
     notifications.show({
       message,
-      color: "cyan",
       autoClose: 4000,
       withBorder: true,
     });
@@ -49,7 +48,7 @@ export default function showAlert(message, children = null) {
         >
           <Stack align="center" gap="md">
             {typeof content === 'string' ? <Text>{content}</Text> : content}
-            <Button onClick={handleClose} variant="light" color="cyan">
+            <Button onClick={handleClose} variant="default">
               OK
             </Button>
           </Stack>

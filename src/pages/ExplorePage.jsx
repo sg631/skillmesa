@@ -1,5 +1,5 @@
 import React from 'react';
-import { Title, Text, Button, Group, Paper, Stack, Badge, Divider, Select, SimpleGrid, Pill, PillsInput } from '@mantine/core';
+import { Title, Text, Button, Group, Paper, Stack, Select, Pill, PillsInput, Divider, SimpleGrid } from '@mantine/core';
 import {
   InstantSearch,
   useHits,
@@ -22,15 +22,13 @@ function ModalityToggle() {
   const { items, refine } = useMenu({ attribute: 'modality' });
   const activeValue = items.find((i) => i.isRefined)?.value || null;
 
-  const toggle = (value) => {
-    refine(activeValue === value ? '' : value);
-  };
+  const toggle = (value) => refine(activeValue === value ? '' : value);
 
   return (
-    <Group gap={0} style={{ border: '1px solid var(--mantine-color-gray-3)', borderRadius: 'var(--mantine-radius-xl)', overflow: 'hidden' }}>
+    <Group gap={0} style={{ border: '1px solid var(--mantine-color-gray-3)', borderRadius: 'var(--mantine-radius-sm)', overflow: 'hidden' }}>
       <Button
         variant={activeValue === 'Online' ? 'filled' : 'subtle'}
-        color={activeValue === 'Online' ? 'cyan' : 'gray'}
+        color={activeValue === 'Online' ? 'dark' : 'gray'}
         radius={0}
         size="sm"
         onClick={() => toggle('Online')}
@@ -39,7 +37,7 @@ function ModalityToggle() {
       </Button>
       <Button
         variant={activeValue === 'In-Person' ? 'filled' : 'subtle'}
-        color={activeValue === 'In-Person' ? 'cyan' : 'gray'}
+        color={activeValue === 'In-Person' ? 'dark' : 'gray'}
         radius={0}
         size="sm"
         onClick={() => toggle('In-Person')}
@@ -68,19 +66,14 @@ function MenuDropdown({ attribute, label, allLabel = 'All' }) {
       ]}
       clearable
       size="sm"
-      radius="xl"
-      style={{ minWidth: 180 }}
+      style={{ minWidth: 160 }}
       aria-label={label}
     />
   );
 }
 
 function TagPicker() {
-  const { items, refine, searchForItems } = useRefinementList({
-    attribute: 'tags',
-    limit: 50,
-  });
-
+  const { items, refine, searchForItems } = useRefinementList({ attribute: 'tags', limit: 50 });
   const [query, setQuery] = React.useState('');
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const wrapperRef = React.useRef(null);
@@ -113,20 +106,16 @@ function TagPicker() {
   };
 
   return (
-    <div ref={wrapperRef} style={{ position: 'relative', flex: '1 1 200px', minWidth: 180 }}>
-      <PillsInput size="sm" radius="xl">
+    <div ref={wrapperRef} style={{ position: 'relative', flex: '1 1 180px', minWidth: 160 }}>
+      <PillsInput size="sm">
         <Pill.Group>
           {selectedTags.map((tag) => (
-            <Pill
-              key={tag.value}
-              withRemoveButton
-              onRemove={() => refine(tag.value)}
-            >
+            <Pill key={tag.value} withRemoveButton onRemove={() => refine(tag.value)}>
               {tag.label}
             </Pill>
           ))}
           <PillsInput.Field
-            placeholder="Search tags..."
+            placeholder="Filter by tag…"
             value={query}
             onChange={handleInputChange}
             onFocus={() => { setDropdownOpen(true); searchForItems(query); }}
@@ -136,8 +125,7 @@ function TagPicker() {
 
       {dropdownOpen && suggestions.length > 0 && (
         <Paper
-          shadow="md"
-          radius="md"
+          withBorder
           style={{
             position: 'absolute',
             top: '100%',
@@ -145,7 +133,7 @@ function TagPicker() {
             right: 0,
             marginTop: 4,
             zIndex: 100,
-            maxHeight: 240,
+            maxHeight: 220,
             overflowY: 'auto',
           }}
         >
@@ -155,10 +143,10 @@ function TagPicker() {
               justify="space-between"
               px="sm"
               py={6}
-              style={{ cursor: 'pointer', fontSize: 14, transition: 'background 0.1s' }}
+              style={{ cursor: 'pointer', fontSize: 13 }}
               onMouseDown={() => handleSelect(item.value)}
-              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--mantine-color-cyan-0)'}
-              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--mantine-color-gray-0)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
             >
               <span>{item.label}</span>
               <Text size="xs" c="dimmed">{item.count}</Text>
@@ -170,7 +158,6 @@ function TagPicker() {
   );
 }
 
-/** Custom Hits grid using Mantine SimpleGrid */
 function MantineHitsGrid() {
   const { hits } = useHits();
 
@@ -179,15 +166,9 @@ function MantineHitsGrid() {
   }
 
   return (
-    <SimpleGrid
-      cols={{ base: 1, sm: 2, lg: 3, xl: 4 }}
-      spacing="lg"
-      verticalSpacing="lg"
-    >
+    <SimpleGrid cols={{ base: 1, sm: 2, md: 3, xl: 4 }} spacing="md">
       {hits.map((hit) => (
-        <div key={hit.objectID} style={{ display: 'flex', justifyContent: 'center' }}>
-          <AlgoliaHit hit={hit} />
-        </div>
+        <AlgoliaHit key={hit.objectID} hit={hit} />
       ))}
     </SimpleGrid>
   );
@@ -201,68 +182,67 @@ function ExplorePage() {
   }, []);
 
   return (
-    <Stack gap="md" py="xl" maw={1600} mx="auto" px="md">
-      <Title order={1} ta="center">Explore</Title>
-      <Text ta="center" c="dimmed">
-        Explore everything that skillmesa has to offer. From babysitting to garden tending, from homework help to SAT prep, we're here.
-      </Text>
+    <Stack gap="lg" py="xl" maw={1400} mx="auto" px="md">
+      <div>
+        <Title order={2}>Explore</Title>
+        <Text size="sm" c="dimmed" mt={4}>
+          Browse services and classes posted by people near you.
+        </Text>
+      </div>
 
       <InstantSearch
         searchClient={searchClient}
         indexName={ALGOLIA_INDEX_NAME}
         routing
         future={{ preserveSharedStateOnUnmount: true }}
+        cleanUrlOnDispose={false}
       >
         <Configure hitsPerPage={12} />
 
-        {/* Search & Filters Panel */}
-        <Paper shadow="sm" p="lg" radius="lg" bg="gray.0">
-          <MantineSearchBox placeholder="Search listings..." />
+        {/* Filter bar */}
+        <Paper withBorder p="md">
+          <MantineSearchBox placeholder="Search listings…" />
 
-          <Group mt="md" gap="sm" wrap="wrap" align="center">
+          <Group mt="sm" gap="sm" wrap="wrap" align="center">
             <ModalityToggle />
             <TagPicker />
             <MenuDropdown attribute="type" label="Type" allLabel="All Types" />
-          </Group>
-
-          <Divider my="sm" />
-
-          <Group justify="space-between" align="center" wrap="wrap">
-            <MantineCurrentRefinements />
-            <Group gap="xs">
+            <Group gap="xs" ml="auto">
               <MantineClearRefinements />
               <Button
-                variant="light"
-                color="cyan"
+                variant="default"
                 size="sm"
                 onClick={() => setAdvancedOpen(!advancedOpen)}
               >
-                {advancedOpen ? 'Hide Advanced' : 'Advanced'}
+                {advancedOpen ? 'Hide filters' : 'More filters'}
               </Button>
             </Group>
           </Group>
 
           {advancedOpen && (
-            <Paper p="md" radius="md" mt="sm" bg="white">
+            <>
+              <Divider my="sm" />
               <Group gap="xl" wrap="wrap">
-                <Stack gap="xs" style={{ flex: '1 1 200px', maxWidth: 350 }}>
-                  <Text size="sm" fw={600} c="dimmed">Category</Text>
+                <Stack gap={4} style={{ flex: '1 1 180px', maxWidth: 300 }}>
+                  <Text size="xs" fw={500} c="dimmed">Category</Text>
                   <MenuDropdown attribute="category" label="Category" allLabel="All Categories" />
                 </Stack>
-                <Stack gap="xs" style={{ flex: '1 1 200px', maxWidth: 350 }}>
-                  <Text size="sm" fw={600} c="dimmed">Price Range</Text>
+                <Stack gap={4} style={{ flex: '1 1 180px', maxWidth: 300 }}>
+                  <Text size="xs" fw={500} c="dimmed">Price Range</Text>
                   <MantineRangeInput attribute="price" />
                 </Stack>
               </Group>
-            </Paper>
+            </>
           )}
+
+          <MantineCurrentRefinements />
         </Paper>
 
         {/* Results */}
-        <Stack gap="md">
+        <Stack gap="sm">
           <MantineStats />
           <MantineHitsGrid />
-          <Group justify="center" mt="lg">
+          <Group justify="center" mt="md">
             <MantinePaginationWidget />
           </Group>
         </Stack>
