@@ -1,20 +1,16 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Title, Text, Stack } from '@mantine/core';
 import { LinkButton } from '../components/LinkElements.jsx';
 
 function NotFoundPage() {
   return (
-    <>
+    <Stack align="center" gap="md" py="xl">
       <title>uh-oh! 404 | skillmesa</title>
-      <h1>
-        <span className="textgiant">Uh-oh!</span>
-        <br></br>
-        <span className="textlarge">404: Page Not Found</span>
-        <br></br>
-        <span className="textmedium">We couldn't find the page you were looking for.</span>
-      </h1>
-      <LinkButton to="/home" className="textcenter">Go Back</LinkButton>
-    </>
+      <Title order={1} style={{ fontSize: '4rem' }}>Uh-oh!</Title>
+      <Title order={2}>404: Page Not Found</Title>
+      <Text size="lg">We couldn't find the page you were looking for.</Text>
+      <LinkButton to="/home">Go Back</LinkButton>
+    </Stack>
   );
 }
 

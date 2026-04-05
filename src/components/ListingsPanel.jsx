@@ -1,117 +1,120 @@
 import React, { useEffect, useState, useRef } from "react";
 import ListingComponent from "./ListingComponent.jsx";
 import { getDocs, query as makeQuery, limit, startAfter } from "firebase/firestore";
+import { Group, Button, Text, SimpleGrid, Loader } from "@mantine/core";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 function ListingsPanel({
   query,
-  size = 5,
+  size = 6,
   paginated = true,
-  className = "listings-panel",
   emptyMessage = "No listings found.",
 }) {
   const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]   = useState(true);
   const [pageCursors, setPageCursors] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [lastDoc, setLastDoc] = useState(null);
+  const [lastDoc, setLastDoc]         = useState(null);
   const [hasNextPage, setHasNextPage] = useState(false);
-  const scrollRef = useRef(null);
 
-  async function fetchPage(afterDoc = null) {
+  const fetchGenRef = useRef(0);
+
+  async function fetchPage(afterDoc = null, generation = 0) {
     if (!query) return;
-
     setLoading(true);
     try {
       let q = query;
       if (paginated) {
+        // Fetch size+1 so we can detect a next page without loading an empty one
+        const fetchLimit = size + 1;
         q = afterDoc
-          ? makeQuery(query, startAfter(afterDoc), limit(size))
-          : makeQuery(query, limit(size));
+          ? makeQuery(query, startAfter(afterDoc), limit(fetchLimit))
+          : makeQuery(query, limit(fetchLimit));
       }
 
       const snap = await getDocs(q);
-      const fetched = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const last = snap.docs[snap.docs.length - 1] || null;
+      if (generation !== fetchGenRef.current) return;
 
-      setHasNextPage(snap.size === size);
-      setListings(fetched);
-      setLastDoc(last);
+      const allDocs     = snap.docs;
+      const hasMore     = allDocs.length > size;
+      const displayDocs = hasMore ? allDocs.slice(0, size) : allDocs;
+
+      setHasNextPage(hasMore);
+      setListings(displayDocs.map(d => ({ id: d.id, ...d.data() })));
+      // Cursor sits at the last *displayed* doc, not the lookahead one
+      setLastDoc(displayDocs[displayDocs.length - 1] ?? null);
     } catch (err) {
-      console.error("Error fetching paginated listings:", err);
+      if (generation !== fetchGenRef.current) return;
+      console.error("Error fetching listings:", err);
       setListings([]);
+      setHasNextPage(false);
     } finally {
-      setLoading(false);
+      if (generation === fetchGenRef.current) setLoading(false);
     }
   }
 
   useEffect(() => {
-    if (query) {
-      setPageCursors([]);
-      setCurrentPage(1);
-      fetchPage(null);
-    }
+    if (!query) return;
+    const gen = ++fetchGenRef.current;
+    setPageCursors([]);
+    setCurrentPage(1);
+    fetchPage(null, gen);
   }, [query]);
 
-  const handleNextPage = async (e) => {
-    e.preventDefault(); // ✅ prevent page jump
+  async function handleNextPage(e) {
+    e.preventDefault();
     if (!lastDoc || !hasNextPage) return;
-    setPageCursors((prev) => [...prev, lastDoc]);
-    setCurrentPage((prev) => prev + 1);
-    await fetchPage(lastDoc);
-  };
+    const gen = ++fetchGenRef.current;
+    setPageCursors(prev => [...prev, lastDoc]);
+    setCurrentPage(prev => prev + 1);
+    await fetchPage(lastDoc, gen);
+  }
 
-  const handlePrevPage = async (e) => {
-    e.preventDefault(); // ✅ prevent page jump
+  async function handlePrevPage(e) {
+    e.preventDefault();
     if (currentPage <= 1) return;
-    const prevCursors = [...pageCursors];
-    prevCursors.pop();
-    const prevCursor = prevCursors[prevCursors.length - 1] || null;
+    const gen = ++fetchGenRef.current;
+    const prevCursors = pageCursors.slice(0, -1);
+    const prevCursor  = prevCursors[prevCursors.length - 1] ?? null;
     setPageCursors(prevCursors);
-    setCurrentPage((prev) => prev - 1);
-    await fetchPage(prevCursor);
-  };
+    setCurrentPage(prev => prev - 1);
+    await fetchPage(prevCursor, gen);
+  }
 
-  if (loading) return <p>Loading listings...</p>;
-  if (listings.length === 0) return <p>{emptyMessage}</p>;
+  const showPagination = paginated && (currentPage > 1 || hasNextPage);
+
+  if (loading) {
+    return (
+      <Group justify="center" py="xl">
+        <Loader color="gray" />
+        <Text c="dimmed">Loading listings...</Text>
+      </Group>
+    );
+  }
 
   return (
-    <div
-      className="listings-panel-wrapper"
-      style={{ height: "900px", overflow: "hidden", position: "relative" }}
-    >
-      <div className={className} style={{ height: "100%", position: "relative" }}>
-        <div
-          className="listings-scroll"
-          ref={scrollRef}
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            gap: "16px",
-            overflowX: "auto",
-            overflowY: "hidden",
-            height: "100%",
-            scrollBehavior: "smooth",
-          }}
-        >
-          {listings.map((listing) => (
-            <ListingComponent key={listing.id} id={listing.id} {...listing} />
+    <div style={{ width: '100%' }}>
+      {listings.length === 0 ? (
+        <Text ta="center" c="dimmed" py="xl">{emptyMessage}</Text>
+      ) : (
+        <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
+          {listings.map(listing => (
+            <ListingComponent key={listing.id} id={listing.id} />
           ))}
-        </div>
+        </SimpleGrid>
+      )}
 
-        {paginated && (
-          <div
-            className="pagination-controls"
-          >
-            <button onClick={handlePrevPage} disabled={currentPage === 1}>
-              ←
-            </button>
-            <span>Page {currentPage}</span>
-            <button onClick={handleNextPage} disabled={!hasNextPage}>
-              →
-            </button>
-          </div>
-        )}
-      </div>
+      {showPagination && (
+        <Group justify="center" gap="sm" mt="md">
+          <Button variant="default" size="sm" onClick={handlePrevPage} disabled={currentPage === 1}>
+            <ChevronLeft size={16} />
+          </Button>
+          <Text size="sm" fw={500}>Page {currentPage}</Text>
+          <Button variant="default" size="sm" onClick={handleNextPage} disabled={!hasNextPage}>
+            <ChevronRight size={16} />
+          </Button>
+        </Group>
+      )}
     </div>
   );
 }

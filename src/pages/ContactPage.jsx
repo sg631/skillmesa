@@ -1,95 +1,119 @@
 import React from "react";
-import { useParams } from "react-router-dom";
-import { doc, getDoc, collection, query, where } from "firebase/firestore";
+import { useParams, useNavigate } from "react-router-dom";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { LinkButton } from "../components/LinkElements.jsx";
+import {
+  Title, Text, Stack, Avatar, Group, Paper, Loader, Button, Box,
+} from "@mantine/core";
+import { Mail, MessageSquare } from "lucide-react";
 
-const listingsCollection = collection(db, "listings");
-const listingsByOwnerQuery = (ownerUID) => query(listingsCollection, where("owner", "==", ownerUID));
-
-// Fetch profile data from Firestore
-async function fetchProfileData(userUID) {
+async function fetchProfileData(uid) {
   try {
-    const userDocRef = doc(db, "users", userUID);
-    const userSnap = await getDoc(userDocRef);
-    if (userSnap.exists()) {
-      return userSnap.data();
-    } else {
-      console.warn("No user found with UID:", userUID);
-      return null;
-    }
-  } catch (error) {
-    console.error("Error fetching user profile:", error);
+    const snap = await getDoc(doc(db, "users", uid));
+    return snap.exists() ? snap.data() : null;
+  } catch (err) {
+    console.error("Error fetching profile:", err);
     return null;
   }
 }
 
-function ProfilePage() {
-  const { userUIDparam } = useParams(); // route param
+function ContactPage() {
+  const { userUIDparam } = useParams();
+  const navigate = useNavigate();
   const [profileData, setProfileData] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading]         = React.useState(true);
 
   React.useEffect(() => {
-    let isMounted = true; // prevent updates on unmounted component
-
-    async function loadProfile() {
+    let isMounted = true;
+    async function load() {
       setLoading(true);
       const data = await fetchProfileData(userUIDparam);
-
-      if (isMounted) {
-        setProfileData(data);
-        setLoading(false);
-      }
+      if (isMounted) { setProfileData(data); setLoading(false); }
     }
-
-    if (userUIDparam) loadProfile();
-
-    return () => {
-      isMounted = false;
-    };
+    if (userUIDparam) load();
+    return () => { isMounted = false; };
   }, [userUIDparam]);
 
   if (loading) {
     return (
-      <>
-        <title>Skillmesa | Loading...</title>
-        <p>Loading profile...</p>
-      </>
+      <Box py="xl" style={{ display: 'flex', justifyContent: 'center' }}>
+        <Loader color="gray" size="sm" />
+      </Box>
     );
   }
 
   if (!profileData) {
     return (
-      <>
-        <title>Skillmesa | Not Found</title>
-        <h1>User not found</h1>
-        <p>The profile you’re looking for doesn’t exist.</p>
-      </>
+      <Stack align="center" py="xl">
+        <Title order={2}>User not found</Title>
+        <Text c="dimmed">The profile you're looking for doesn't exist.</Text>
+      </Stack>
     );
   }
 
   const displayName = profileData.displayName || "Unnamed User";
-  const ownerQuery = listingsByOwnerQuery(userUIDparam);
+  const email       = profileData.contact?.email;
+  const phone       = profileData.contact?.phone;
 
   return (
-    <>
-      <title>contacts | skillmesa</title>
-      <div className="profile-container">
-        <h1>{displayName}</h1>
-        <code className="acc">
-          {profileData.profilePic?.currentUrl && (
-            <img className="profilepic-inline" src={profileData.profilePic.currentUrl} alt="Profile" />
-          )}
-          {profileData.username || "N/A"}
-        </code>
-        <br />
-        <span className="emaildisplay">{profileData.contact.email}</span>
-        <LinkButton to={"mailto:" + profileData.contact.email}>Send Email</LinkButton>
-        <span className="phonenumdisplay">{profileData.contact.phone || "No attached phone number"}</span>
-        <button disabled>Chat (COMING SOON)</button>
-      </div>
-    </>
+    <Stack align="center" gap="lg" py="xl" px="md" maw={500} mx="auto" className="page-enter">
+      <title>contact | skillmesa</title>
+
+      <Group gap="sm">
+        {profileData.profilePic?.currentUrl && (
+          <Avatar src={profileData.profilePic.currentUrl} size="md" radius="xl" />
+        )}
+        <Title order={2}>{displayName}</Title>
+      </Group>
+
+      {/* Email */}
+      {email ? (
+        <Paper withBorder p="xl" radius="md" w="100%">
+          <Stack gap="sm">
+            <Text size="xs" c="dimmed" fw={500} tt="uppercase">Email</Text>
+            <Text fw={500}>{email}</Text>
+            <Button
+              variant="default"
+              leftSection={<Mail size={14} />}
+              onClick={() => window.open(`mailto:${email}`)}
+              fullWidth
+            >
+              Send Email
+            </Button>
+          </Stack>
+        </Paper>
+      ) : (
+        <Paper withBorder p="xl" radius="md" w="100%">
+          <Text size="sm" c="dimmed">No email listed.</Text>
+        </Paper>
+      )}
+
+      {/* Phone */}
+      {phone && (
+        <Paper withBorder p="xl" radius="md" w="100%">
+          <Stack gap="sm">
+            <Text size="xs" c="dimmed" fw={500} tt="uppercase">Phone</Text>
+            <Text fw={500}>{phone}</Text>
+          </Stack>
+        </Paper>
+      )}
+
+      {/* Chat */}
+      <Paper withBorder p="xl" radius="md" w="100%">
+        <Stack gap="sm">
+          <Text size="xs" c="dimmed" fw={500} tt="uppercase">Chat</Text>
+          <Text size="sm" c="dimmed">Send direct messages through Skillmesa.</Text>
+          <Button
+            leftSection={<MessageSquare size={14} />}
+            onClick={() => navigate(`/chat/${userUIDparam}`)}
+            fullWidth
+          >
+            Open Chat
+          </Button>
+        </Stack>
+      </Paper>
+    </Stack>
   );
 }
 
-export default ProfilePage;
+export default ContactPage;

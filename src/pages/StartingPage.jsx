@@ -1,4 +1,5 @@
 import React from 'react';
+import { Title, Text, Stack, Box } from '@mantine/core';
 import { LinkButton } from '../components/LinkElements.jsx';
 import CarouselElement from '../components/CarouselElement.jsx';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -11,43 +12,73 @@ function StartingPage() {
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
-      setCheckedAuth(true); // marks that Firebase has finished checking
+      setCheckedAuth(true);
     });
     return () => unsubscribe();
   }, []);
 
-  // Only render the button after auth state is known
   const getStartedLink = checkedAuth ? (user ? "/home" : "/signon") : "/signon";
 
   return (
-    <>
+    <Box
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: 'calc(100vh - 112px)',
+        padding: '3rem 1rem',
+      }}
+    >
       <title>skillmesa</title>
-      <br />
-      <img src="/assets/logos/skillmesa-large.png" alt="Skillmesa Logo" width={465} height={110} />
-      <p>
-        <span className='textmedium'>
-          Whether you're looking for opportunities, services, or knowledge in
-        </span>
-        <br />
-        <CarouselElement className="textcenter" style={{ marginTop: '20px' }}>
-          <li><span className='texthuge'>coding</span></li>
-          <li><span className='texthuge'>design</span></li>
-          <li><span className='texthuge'>writing</span></li>
-          <li><span className='texthuge'>music</span></li>
-        </CarouselElement>
-        <br />
-        or more, Skillmesa is your platform to connect and thrive.
-        <br /><br /><br /><br />
-        <span className='textmedium'>
-          From babysitting to garden tending, and from homework help to SAT prep, we're here.
-        </span>
-      </p>
+      <Stack align="center" gap="lg" maw={640} ta="center">
+        <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: '0.08em' }}>
+          Peer-to-peer skills marketplace
+        </Text>
 
-      <LinkButton to={getStartedLink} className="textcenter">
-        Get Started
-      </LinkButton>
+        <Stack align="center" gap="xs">
+          <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700}>
+            Find skills in
+          </Title>
+          <CarouselElement>
+            <li>
+              <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
+                background: 'linear-gradient(to right, #9866f0, #75e4f8)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>coding</Title>
+            </li>
+            <li>
+              <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
+                background: 'linear-gradient(to right, #f96fad, #fcc361)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>design</Title>
+            </li>
+            <li>
+              <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
+                background: 'linear-gradient(to right, #39e4ae, #73a1ec)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>writing</Title>
+            </li>
+            <li>
+              <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
+                background: 'linear-gradient(to right, #ff8d50, #bf86f4)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>music</Title>
+            </li>
+          </CarouselElement>
+          <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700}>
+            and more
+          </Title>
+        </Stack>
 
-    </>
+        <Text size="lg" c="dimmed" maw={480}>
+          From babysitting to SAT prep, from lawn care to tutoring — connect with people in your community.
+        </Text>
+
+        <LinkButton to={getStartedLink} size="md" variant="filled">
+          Get started
+        </LinkButton>
+      </Stack>
+    </Box>
   );
 }
 

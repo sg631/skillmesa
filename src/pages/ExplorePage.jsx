@@ -1,363 +1,254 @@
 import React from 'react';
-import ListingsPanel from '../components/ListingsPanel.jsx';
-import { db } from '../firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { Title, Text, Button, Group, Paper, Stack, Select, Pill, PillsInput, Divider, SimpleGrid } from '@mantine/core';
+import {
+  InstantSearch,
+  useHits,
+  Configure,
+  useMenu,
+  useRefinementList,
+} from 'react-instantsearch';
+import { searchClient, ALGOLIA_INDEX_NAME } from '../algolia';
+import AlgoliaHit from '../components/AlgoliaHit.jsx';
+import {
+  MantineSearchBox,
+  MantinePaginationWidget,
+  MantineStats,
+  MantineCurrentRefinements,
+  MantineClearRefinements,
+  MantineRangeInput,
+} from '../components/AlgoliaWidgets.jsx';
 
-function useExploreSearch(listingsColl) {
-    // UI form state (what the user is editing)
-    const [zipInput, setZipInput] = React.useState('');
-    const [typeInput, setTypeInput] = React.useState('irrelevant');
-    const [modalityInput, setModalityInput] = React.useState('irrelevant');
-    const [categoryInput, setCategoryInput] = React.useState('irrelevant');
-    const [minPriceInput, setMinPriceInput] = React.useState('');
-    const [maxPriceInput, setMaxPriceInput] = React.useState('');
-    const [tagsInput, setTagsInput] = React.useState('');
+function ModalityToggle() {
+  const { items, refine } = useMenu({ attribute: 'modality' });
+  const activeValue = items.find((i) => i.isRefined)?.value || null;
 
-    // "Applied" snapshot — the query is built from this only. This lets the user
-    // edit freely and then press "Update Filters" to actually run the query.
-    const [applied, setApplied] = React.useState({
-        zip: '',
-        typeFilter: 'irrelevant',
-        modality: 'irrelevant',
-        category: 'irrelevant',
-        minPrice: '',
-        maxPrice: '',
-        tags: ''
-    });
+  const toggle = (value) => refine(activeValue === value ? '' : value);
 
-    const parsePrice = (v) => {
-        if (v === '' || v === null || v === undefined) return null;
-        const n = parseFloat(String(v).replace(/[^0-9.]/g, ''));
-        return Number.isFinite(n) ? n : null;
-    };
-
-    const applyFilters = React.useCallback(() => {
-        setApplied({
-            zip: zipInput,
-            typeFilter: typeInput,
-            modality: modalityInput,
-            category: categoryInput,
-            minPrice: minPriceInput,
-            maxPrice: maxPriceInput,
-            tags: tagsInput
-        });
-    }, [zipInput, typeInput, modalityInput, categoryInput, minPriceInput, maxPriceInput, tagsInput]);
-
-    const resetFilters = React.useCallback(() => {
-        setZipInput('');
-        setTypeInput('irrelevant');
-        setModalityInput('irrelevant');
-        setCategoryInput('irrelevant');
-        setMinPriceInput('');
-        setMaxPriceInput('');
-        setTagsInput('');
-        setApplied({
-            zip: '',
-            typeFilter: 'irrelevant',
-            modality: 'irrelevant',
-            category: 'irrelevant',
-            minPrice: '',
-            maxPrice: '',
-            tags: ''
-        });
-    }, []);
-
-    const searchQuery = React.useMemo(() => {
-        const clauses = [];
-
-        const zip = applied.zip || '';
-        const typeFilter = applied.typeFilter;
-        const modality = applied.modality;
-        const category = applied.category;
-        const minPrice = applied.minPrice;
-        const maxPrice = applied.maxPrice;
-        const tags = applied.tags || '';
-
-        const tagList = tags
-            .split(',')
-            .map(t => t.trim().toLowerCase())
-            .filter(Boolean)
-            .slice(0, 10);
-
-        // type filter
-        let mappedType = null;
-        if (typeFilter && typeFilter !== 'irrelevant') {
-            mappedType = typeFilter.toLowerCase().includes('class') ? 'class' : 'service';
-            clauses.push(where('type', '==', mappedType));
-        }
-
-        // modality -> stored boolean "online" flag (true for online, false for in-person)
-        if (modality && modality !== 'irrelevant') {
-            const isOnline = modality === 'online';
-            clauses.push(where('online', '==', isOnline));
-        }
-
-        // category exact match (if the documents use a field named `category`)
-        if (category && category !== 'irrelevant') {
-            clauses.push(where('category', '==', category));
-        }
-
-        // zip code exact match
-        if (zip) {
-            clauses.push(where('zipCode', '==', zip));
-        }
-
-        // price range
-        const minN = parsePrice(minPrice);
-        const maxN = parsePrice(maxPrice);
-        if (minN !== null) clauses.push(where('price', '>=', minN));
-        if (maxN !== null) clauses.push(where('price', '<=', maxN));
-
-        // If the user supplied tags, try matching a tags[] array on the document.
-        if (tagList.length > 0) {
-            clauses.push(where('tags', 'array-contains-any', tagList));
-        }
-
-        // build the Firestore query (if no clauses, returns the collection reference)
-        return clauses.reduce((qSoFar, clause) => query(qSoFar, clause), listingsColl);
-    }, [applied, listingsColl]);
-
-    // a small helper to describe which filters are active (for UI)
-    const activeFiltersSummary = React.useMemo(() => {
-        const parts = [];
-        if (applied.zip) parts.push(`zip ${applied.zip}`);
-        if (applied.typeFilter && applied.typeFilter !== 'irrelevant') parts.push(applied.typeFilter);
-        if (applied.modality && applied.modality !== 'irrelevant') parts.push(applied.modality);
-        if (applied.category && applied.category !== 'irrelevant') parts.push(applied.category);
-        if (applied.minPrice) parts.push(`min $${applied.minPrice}`);
-        if (applied.maxPrice) parts.push(`max $${applied.maxPrice}`);
-        if (applied.tags) parts.push(`tags: ${applied.tags}`);
-        return parts.length ? parts.join(' • ') : 'No filters applied';
-    }, [applied]);
-
-    return {
-        // form state (controlled inputs)
-        zipInput, setZipInput,
-        typeInput, setTypeInput,
-        modalityInput, setModalityInput,
-        categoryInput, setCategoryInput,
-        minPriceInput, setMinPriceInput,
-        maxPriceInput, setMaxPriceInput,
-        tagsInput, setTagsInput,
-        // control actions
-        applyFilters, resetFilters,
-        // applied query + helpers
-        searchQuery,
-        activeFiltersSummary
-    };
+  return (
+    <Group gap={0} style={{ border: '1px solid var(--mantine-color-gray-3)', borderRadius: 'var(--mantine-radius-sm)', overflow: 'hidden' }}>
+      <Button
+        variant={activeValue === 'Online' ? 'filled' : 'subtle'}
+        color={activeValue === 'Online' ? 'dark' : 'gray'}
+        radius={0}
+        size="sm"
+        onClick={() => toggle('Online')}
+      >
+        Online
+      </Button>
+      <Button
+        variant={activeValue === 'In-Person' ? 'filled' : 'subtle'}
+        color={activeValue === 'In-Person' ? 'dark' : 'gray'}
+        radius={0}
+        size="sm"
+        onClick={() => toggle('In-Person')}
+      >
+        In-Person
+      </Button>
+    </Group>
+  );
 }
 
-const listingsCollection = collection(db, "listings");
+function MenuDropdown({ attribute, label, allLabel = 'All' }) {
+  const { items, refine } = useMenu({ attribute });
+  const activeValue = items.find((i) => i.isRefined)?.value || '';
+
+  return (
+    <Select
+      placeholder={allLabel}
+      value={activeValue || null}
+      onChange={(val) => refine(val || '')}
+      data={[
+        { value: '', label: allLabel },
+        ...items.map((item) => ({
+          value: item.value,
+          label: `${item.label} (${item.count})`,
+        })),
+      ]}
+      clearable
+      size="sm"
+      style={{ minWidth: 160 }}
+      aria-label={label}
+    />
+  );
+}
+
+function TagPicker() {
+  const { items, refine, searchForItems } = useRefinementList({ attribute: 'tags', limit: 50 });
+  const [query, setQuery] = React.useState('');
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const wrapperRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedTags = items.filter((i) => i.isRefined);
+  const suggestions = items.filter((i) => !i.isRefined);
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setQuery(value);
+    searchForItems(value);
+    setDropdownOpen(true);
+  };
+
+  const handleSelect = (value) => {
+    refine(value);
+    setQuery('');
+    searchForItems('');
+    setDropdownOpen(false);
+  };
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative', flex: '1 1 180px', minWidth: 160 }}>
+      <PillsInput size="sm">
+        <Pill.Group>
+          {selectedTags.map((tag) => (
+            <Pill key={tag.value} withRemoveButton onRemove={() => refine(tag.value)}>
+              {tag.label}
+            </Pill>
+          ))}
+          <PillsInput.Field
+            placeholder="Filter by tag…"
+            value={query}
+            onChange={handleInputChange}
+            onFocus={() => { setDropdownOpen(true); searchForItems(query); }}
+          />
+        </Pill.Group>
+      </PillsInput>
+
+      {dropdownOpen && suggestions.length > 0 && (
+        <Paper
+          withBorder
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            marginTop: 4,
+            zIndex: 100,
+            maxHeight: 220,
+            overflowY: 'auto',
+          }}
+        >
+          {suggestions.slice(0, 8).map((item) => (
+            <Group
+              key={item.value}
+              justify="space-between"
+              px="sm"
+              py={6}
+              style={{ cursor: 'pointer', fontSize: 13 }}
+              onMouseDown={() => handleSelect(item.value)}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--mantine-color-gray-0)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              <span>{item.label}</span>
+              <Text size="xs" c="dimmed">{item.count}</Text>
+            </Group>
+          ))}
+        </Paper>
+      )}
+    </div>
+  );
+}
+
+function MantineHitsGrid() {
+  const { hits } = useHits();
+
+  if (hits.length === 0) {
+    return <Text ta="center" c="dimmed" py="xl">No results found.</Text>;
+  }
+
+  return (
+    <SimpleGrid cols={{ base: 1, sm: 2, md: 3, xl: 4 }} spacing="md">
+      {hits.map((hit) => (
+        <AlgoliaHit key={hit.objectID} hit={hit} />
+      ))}
+    </SimpleGrid>
+  );
+}
 
 function ExplorePage() {
-    React.useEffect(() => {
-        document.title = 'Explore | skillmesa';
-    }, []);
+  const [advancedOpen, setAdvancedOpen] = React.useState(false);
 
-    const explore = useExploreSearch(listingsCollection);
+  React.useEffect(() => {
+    document.title = 'Explore | skillmesa';
+  }, []);
 
-    const panelInfos = {
-        courses: [
-            {
-                name: "All Classes",
-                query: query(listingsCollection, where("type", "==", "class")),
-                description: "A showcase and celebration of all of the classes that have been made by the youth and the experienced alike."
-            },
-            {
-                name: "Coding & Development Classes",
-                query: query(listingsCollection, where("type", "==", "class"), where("category", "==", "coding")),
-                description: "Learn web, app, and software development — from beginner tutorials to advanced workshops."
-            },
-            {
-                name: "Music Classes",
-                query: query(listingsCollection, where("type", "==", "class"), where("category", "==", "music")),
-                description: "Instrument lessons, theory, production, and ensemble workshops for all ages and levels."
-            },
-            {
-                name: "Math Classes",
-                query: query(listingsCollection, where("type", "==", "class"), where("category", "==", "math")),
-                description: "From arithmetic to calculus and competition prep — structured classes to build math skills."
-            },
-            {
-                name: "Art Classes",
-                query: query(listingsCollection, where("type", "==", "class"), where("category", "==", "art")),
-                description: "Painting, drawing, ceramics, and mixed media classes to explore creativity and technique."
-            },
-            {
-                name: "Language Classes",
-                query: query(listingsCollection, where("type", "==", "class"), where("category", "==", "language")),
-                description: "Spoken and written language courses, conversation groups, and exam prep."
-            },
-            {
-                name: "Design Classes",
-                query: query(listingsCollection, where("type", "==", "class"), where("category", "==", "design")),
-                description: "Graphic, UX/UI, and product design classes focused on practical tools and portfolios."
-            },
-            {
-                name: "Writing & Editing Classes",
-                query: query(listingsCollection, where("type", "==", "class"), where("category", "==", "writing")),
-                description: "Creative writing, copywriting, and editing workshops to sharpen your voice and craft."
-            },
-            {
-                name: "Health, Fitness & Wellness Classes",
-                query: query(listingsCollection, where("type", "==", "class"), where("category", "==", "health")),
-                description: "Yoga, fitness, nutrition, and mindfulness classes to support wellbeing."
-            },
-            {
-                name: "General Education Classes",
-                query: query(listingsCollection, where("type", "==", "class"), where("category", "==", "education")),
-                description: "Classes that don't fit other categories — special topics, seminars, and community learning."
-            }
-        ],
-        services: [
-            {
-                name: "All Skill Services",
-                query: query(listingsCollection, where("type", "==", "service")),
-                description: "Celebrating the dual usage of this platform for classes and tutoring as well as various services, including lawn mowing, watching the dog, etc.!"
-            },
-            {
-                name: "Business & Marketing Services",
-                query: query(listingsCollection, where("type", "==", "service"), where("category", "==", "business")),
-                description: "Consulting, marketing help, small business services, and freelance business support."
-            },
-            {
-                name: "Home & Personal Services",
-                query: query(listingsCollection, where("type", "==", "service"), where("category", "==", "home-services")),
-                description: "Cleaning, gardening, pet care, help around the house, and other local personal services."
-            },
-            {
-                name: "Tutoring Services",
-                query: query(listingsCollection, where("type", "==", "service"), where("category", "==", "tutoring")),
-                description: "One-on-one or small-group tutoring across subjects — homework help, test prep, and mentoring."
-            },
-            {
-                name: "Volunteering Opportunities",
-                query: query(listingsCollection, where("type", "==", "service"), where("category", "==", "volunteering")),
-                description: "Volunteer listings and community service opportunities to get involved and give back."
-            },
-            {
-                name: "Other Services",
-                query: query(listingsCollection, where("type", "==", "service"), where("category", "==", "other")),
-                description: "Miscellaneous services that don't fit in the main categories — unique offerings and one-offs."
-            }
-        ]
-    };
+  return (
+    <Stack gap="lg" py="xl" maw={1400} mx="auto" px="md">
+      <div>
+        <Title order={2}>Explore</Title>
+        <Text size="sm" c="dimmed" mt={4}>
+          Browse services and classes posted by people near you.
+        </Text>
+      </div>
 
-    // small helper to keep zip numeric only while typing
-    const onZipChange = (e) => {
-        const onlyDigits = e.target.value.replace(/\D/g, '');
-        explore.setZipInput(onlyDigits);
-    };
+      <InstantSearch
+        searchClient={searchClient}
+        indexName={ALGOLIA_INDEX_NAME}
+        routing
+        future={{ preserveSharedStateOnUnmount: true }}
+        cleanUrlOnDispose={false}
+      >
+        <Configure hitsPerPage={12} />
 
-    return (
-        <>
-            <h1>Explore</h1>
-            <p>Explore everything that skillmesa has to offer. From babysitting to garden tending, from homework help to SAT prep, we're here.</p>
+        {/* Filter bar */}
+        <Paper withBorder p="md">
+          <MantineSearchBox placeholder="Search listings…" />
 
-            <h2>Filters</h2>
-            <div className="search-filter-panel">
-                <h3>Filter</h3>
-                <form onSubmit={(e) => { e.preventDefault(); explore.applyFilters(); }}>
-                    <span className="textmedium">Location</span><br />
-                    <input
-                        placeholder='Zip Code'
-                        value={explore.zipInput}
-                        onChange={onZipChange}
-                        inputMode="numeric"
-                        pattern="\d*"
-                    /><br />
+          <Group mt="sm" gap="sm" wrap="wrap" align="center">
+            <ModalityToggle />
+            <TagPicker />
+            <MenuDropdown attribute="type" label="Type" allLabel="All Types" />
+            <Group gap="xs" ml="auto">
+              <MantineClearRefinements />
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setAdvancedOpen(!advancedOpen)}
+              >
+                {advancedOpen ? 'Hide filters' : 'More filters'}
+              </Button>
+            </Group>
+          </Group>
 
-                    <span className="textmedium">Flags</span><br /><br />
-                    <select value={explore.typeInput} onChange={e => explore.setTypeInput(e.target.value)}>
-                        <option value="irrelevant">Either</option>
-                        <option value="class">Class</option>
-                        <option value="service">Skill Service</option>
-                    </select><br /><br/>
-                    <select value={explore.modalityInput} onChange={e => explore.setModalityInput(e.target.value)}>
-                        <option value="irrelevant">Either</option>
-                        <option value="in-person">In-person</option>
-                        <option value="online">Online</option>
-                    </select><br/><br/>
+          {advancedOpen && (
+            <>
+              <Divider my="sm" />
+              <Group gap="xl" wrap="wrap">
+                <Stack gap={4} style={{ flex: '1 1 180px', maxWidth: 300 }}>
+                  <Text size="xs" fw={500} c="dimmed">Category</Text>
+                  <MenuDropdown attribute="category" label="Category" allLabel="All Categories" />
+                </Stack>
+                <Stack gap={4} style={{ flex: '1 1 180px', maxWidth: 300 }}>
+                  <Text size="xs" fw={500} c="dimmed">Price Range</Text>
+                  <MantineRangeInput attribute="price" />
+                </Stack>
+              </Group>
+            </>
+          )}
 
-                    <span className="textmedium">Category</span><br />
-                    <select value={explore.categoryInput} onChange={e => explore.setCategoryInput(e.target.value)}>
-                        <option value="irrelevant">Any</option>
-                        <option value="coding">Coding and Development</option>
-                        <option value="music">Music</option>
-                        <option value="math">Math</option>
-                        <option value="art">Art</option>
-                        <option value="language">Language</option>
-                        <option value="design">Design</option>
-                        <option value="writing">Writing and Editing</option>
-                        <option value="business">Business and Marketing</option>
-                        <option value="home-services">Home and Personal Services</option>
-                        <option value="health">Health, Fitness and Wellness</option>
-                        <option value="tutoring">General Tutoring</option>
-                        <option value="education">Class (Not encompassed by other options)</option>
-                        <option value="volunteering">Volunteering Opportunity</option>
-                        <option value="other">Other</option>
-                    </select><br/><br/>
+          <MantineCurrentRefinements />
+        </Paper>
 
-                    <span className="textmedium">Price</span><br/>
-                    <input
-                        placeholder="Minimum price (USD)"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={explore.minPriceInput}
-                        onChange={e => explore.setMinPriceInput(e.target.value)}
-                    /><br/>
-                    <input
-                        placeholder="Maximum price (USD)"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={explore.maxPriceInput}
-                        onChange={e => explore.setMaxPriceInput(e.target.value)}
-                    /><br/>
-
-                    <span className="textmedium">Other</span><br/>
-                    <input
-                        placeholder='Tags (comma-separated)'
-                        value={explore.tagsInput}
-                        onChange={e => explore.setTagsInput(e.target.value)}
-                    /><br/><br/>
-
-                    <button type="button" onClick={explore.applyFilters}>Update Filters</button>{' '}
-                    <button type="button" onClick={explore.resetFilters}>Clear</button>
-
-                    <div style={{ marginTop: 10, color: '#555' }}>
-                        <strong>Active:</strong> {explore.activeFiltersSummary}
-                    </div>
-                </form>
-            </div>
-
-            <ListingsPanel
-                query={explore.searchQuery}
-                size={15}
-                paginated={true}
-                emptyMessage='Sorry, there is nothing that fits those filters yet!'
-            />
-
-            <h2>Classes & Services</h2>
-            {Object.entries(panelInfos).map(([group, infos]) => (
-                <section key={group}>
-                    {group !== 'courses' && <h2>{group.charAt(0).toUpperCase() + group.slice(1)}</h2>}
-                    {infos.map(info => (
-                        <div key={info.name} className="panel">
-                            <h3>{info.name}</h3>
-                            <p>{info.description}</p>
-                            <ListingsPanel
-                                query={info.query}
-                                size={5}
-                                paginated={true}
-                                emptyMessage="There is no listings in this category yet!"
-                            />
-                        </div>
-                    ))}
-                </section>
-            ))}
-        </>
-    );
+        {/* Results */}
+        <Stack gap="sm">
+          <MantineStats />
+          <MantineHitsGrid />
+          <Group justify="center" mt="md">
+            <MantinePaginationWidget />
+          </Group>
+        </Stack>
+      </InstantSearch>
+    </Stack>
+  );
 }
+
 export default ExplorePage;

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import {
   FORMAT_TEXT_COMMAND,
@@ -13,11 +13,15 @@ import {
   INSERT_ORDERED_LIST_COMMAND,
   INSERT_UNORDERED_LIST_COMMAND,
 } from "@lexical/list";
+import { Group, ActionIcon, Tooltip, Modal, TextInput, Button, Stack, Text } from "@mantine/core";
+import { Bold, Italic, Underline, List, ListOrdered, Link2 } from "lucide-react";
 
 export default function TextEditorToolbar() {
   const [editor] = useLexicalComposerContext();
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  const [confirmLink, setConfirmLink] = useState(null);
 
-  // 🔗 Link toggle handler
   const handleLinkClick = () => {
     editor.update(() => {
       const selection = $getSelection();
@@ -29,15 +33,20 @@ export default function TextEditorToolbar() {
       if (isLink) {
         editor.dispatchCommand(TOGGLE_LINK_COMMAND, null);
       } else {
-        const url = window.prompt("Enter a link URL:");
-        if (url) {
-          editor.dispatchCommand(TOGGLE_LINK_COMMAND, url);
-        }
+        setLinkUrl("");
+        setLinkModalOpen(true);
       }
     });
   };
 
-  // ⚡ Ctrl+click link navigation
+  const handleLinkSubmit = () => {
+    if (linkUrl) {
+      editor.dispatchCommand(TOGGLE_LINK_COMMAND, linkUrl);
+    }
+    setLinkModalOpen(false);
+    setLinkUrl("");
+  };
+
   React.useEffect(() => {
     const container = document.querySelector(".editor-input");
     if (!container) return;
@@ -46,8 +55,7 @@ export default function TextEditorToolbar() {
       const link = e.target.closest("a");
       if (link && e.ctrlKey) {
         e.preventDefault();
-        const shouldGo = window.confirm(`Open link? \n${link.href}`);
-        if (shouldGo) window.open(link.href, "_blank");
+        setConfirmLink(link.href);
       }
     };
 
@@ -56,23 +64,81 @@ export default function TextEditorToolbar() {
   }, []);
 
   return (
-    <div className="toolbar">
-      <button onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold")}>
-        <b>B</b>
-      </button>
-      <button onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "italic")}>
-        <i>I</i>
-      </button>
-      <button onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "underline")}>
-        <u>U</u>
-      </button>
-      <button onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND)}>
-        • List
-      </button>
-      <button onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND)}>
-        1. List
-      </button>
-      <button onClick={handleLinkClick}>🔗 Link</button>
-    </div>
+    <>
+      <Group gap={4} p={6} style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', background: 'var(--mantine-color-gray-0)', borderRadius: '8px 8px 0 0' }}>
+        <Tooltip label="Bold">
+          <ActionIcon variant="subtle" color="gray" onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold")}>
+            <Bold size={16} />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip label="Italic">
+          <ActionIcon variant="subtle" color="gray" onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "italic")}>
+            <Italic size={16} />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip label="Underline">
+          <ActionIcon variant="subtle" color="gray" onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "underline")}>
+            <Underline size={16} />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip label="Bullet List">
+          <ActionIcon variant="subtle" color="gray" onClick={() => editor.dispatchCommand(INSERT_UNORDERED_LIST_COMMAND)}>
+            <List size={16} />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip label="Numbered List">
+          <ActionIcon variant="subtle" color="gray" onClick={() => editor.dispatchCommand(INSERT_ORDERED_LIST_COMMAND)}>
+            <ListOrdered size={16} />
+          </ActionIcon>
+        </Tooltip>
+        <Tooltip label="Insert Link">
+          <ActionIcon variant="subtle" color="gray" onClick={handleLinkClick}>
+            <Link2 size={16} />
+          </ActionIcon>
+        </Tooltip>
+      </Group>
+
+      {/* Link URL Modal */}
+      <Modal
+        opened={linkModalOpen}
+        onClose={() => setLinkModalOpen(false)}
+        title="Insert Link"
+        centered
+        size="sm"
+      >
+        <Stack gap="sm">
+          <TextInput
+            placeholder="https://example.com"
+            label="URL"
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleLinkSubmit()}
+            data-autofocus
+          />
+          <Group justify="flex-end">
+            <Button variant="subtle" color="gray" onClick={() => setLinkModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleLinkSubmit}>Insert</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* Open Link Confirmation Modal */}
+      <Modal
+        opened={!!confirmLink}
+        onClose={() => setConfirmLink(null)}
+        title="Open Link"
+        centered
+        size="sm"
+      >
+        <Stack gap="sm">
+          <Text size="sm">Open this link in a new tab?</Text>
+          <Text size="sm" c="cyan" style={{ wordBreak: 'break-all' }}>{confirmLink}</Text>
+          <Group justify="flex-end">
+            <Button variant="subtle" color="gray" onClick={() => setConfirmLink(null)}>Cancel</Button>
+            <Button onClick={() => { window.open(confirmLink, "_blank"); setConfirmLink(null); }}>Open</Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </>
   );
 }

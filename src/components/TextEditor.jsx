@@ -9,6 +9,7 @@ import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { ListNode, ListItemNode } from "@lexical/list";
 import { LinkNode } from "@lexical/link";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
+import { ImageNode } from "./ImageNode.jsx";
 import TextEditorToolbar from "./TextEditorToolbar.jsx";
 
 /**
@@ -25,7 +26,7 @@ export default function TextEditor({ initialState = "", onChange }) {
     onError(error) {
       console.error("Lexical error:", error);
     },
-    nodes: [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode],
+    nodes: [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, ImageNode],
   };
 
   return (

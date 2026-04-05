@@ -1,197 +1,225 @@
-import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-
-import { TabBarElement, TabContainerElement } from '../components/TabElements.jsx';
-import ShowAlert from '../components/ShowAlert.jsx'
-
+import React from "react";
+import { Paper, Tabs, TextInput, PasswordInput, Button, Title, Stack } from "@mantine/core";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth, db } from "../firebase.js";
-import { collection, getDocs, addDoc, doc, getDoc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import showAlert from "../components/ShowAlert.jsx";
 
-
-
 function SignonComponent({ mode = "dual", width, height }) {
-    const [activeTab, setActiveTab] = React.useState(0);
-    //Set up storing input values
-    const [signUpData, setSignUpData] = React.useState({
-        realName: "",
-        username: "",
-        email: "",
-        password: ""
-    });
-    const [loginData, setLoginData] = React.useState({
-        email: "",
-        password: ""
-    });
+  const [activeTab, setActiveTab] = React.useState("signup");
+  const [signUpData, setSignUpData] = React.useState({
+    realName: "",
+    username: "",
+    email: "",
+    password: "",
+    displayName: "",
+    dob: "",
+  });
+  const [loginData, setLoginData] = React.useState({
+    email: "",
+    password: "",
+  });
 
-    async function handleSignUp() {
-        try {
-            const userCredential = await createUserWithEmailAndPassword(
-            auth,
-            signUpData.email,
-            signUpData.password
-            );
-            const user = userCredential.user;
+  async function handleSignUp() {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        signUpData.email,
+        signUpData.password
+      );
+      const user = userCredential.user;
 
-            // --- generate random colors ---
-            const rand = () => Math.floor(Math.random() * 256);
-            const rectColor = `rgb(${rand()}, ${rand()}, ${rand()})`;
-            const circleColor = `rgb(${rand()}, ${rand()}, ${rand()})`;
+      const rand = () => Math.floor(Math.random() * 256);
+      const rectColor = `rgb(${rand()}, ${rand()}, ${rand()})`;
+      const circleColor = `rgb(${rand()}, ${rand()}, ${rand()})`;
 
-            // --- build SVG string (rect + circle) ---
-            const svg = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
-                <rect x="50" y="50" width="100" height="100" fill="${rectColor}" />
-                <circle cx="250" cy="150" r="70" fill="${circleColor}" />
-            </svg>
-            `.trim();
+      const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
+          <rect x="50" y="50" width="100" height="100" fill="${rectColor}" />
+          <circle cx="250" cy="150" r="70" fill="${circleColor}" />
+      </svg>
+      `.trim();
 
-            // --- convert to data URL (URI-encoded) ---
-            const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
-            
-            // Add user info to Firestore 'users' collection
-            await setDoc(doc(db, "users", user.uid), {
-                fullname: signUpData.realName,
-                username: signUpData.username,
-                email: signUpData.email,
-                createdAt: new Date(),
-                profilePic: {
-                    setProfilePic: false,
-                    svgDataUrl: svgDataUrl,
-                    currentUrl: svgDataUrl
-                },
-                dob: new Date(signUpData.dob) || null,
-                displayName: signUpData.displayName || signUpData.username,
-                contact: {
-                    email: signUpData.email,
-                    phone: null
-                }
-            });
+      const svgDataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 
-            // Update Firebase Auth profile
-            await updateProfile(user, {
-                displayName: signUpData.displayName || signUpData.username,
-                photoURL: svgDataUrl
-            });
+      await setDoc(doc(db, "users", user.uid), {
+        fullname: signUpData.realName,
+        username: signUpData.username,
+        email: signUpData.email,
+        createdAt: new Date(),
+        profilePic: {
+          setProfilePic: false,
+          svgDataUrl: svgDataUrl,
+          currentUrl: svgDataUrl,
+        },
+        dob: new Date(signUpData.dob) || null,
+        displayName: signUpData.displayName || signUpData.username,
+        contact: {
+          email: signUpData.email,
+          phone: null,
+        },
+      });
 
-            // redirect or continue
-            window.location.href = "/home";
-        } catch (error) {
-            let errorCode = error.code;
-            let errorMessage = "Unexpected Error " + error.code + ": " + error.message;
-            switch(errorCode){
-                case "auth/invalid-email":
-                    errorMessage = "Invalid email."
-                    break;
-                case "auth/email-already-in-use":
-                    errorMessage = "An account with that email already exists.";
-                    break;
-                case "auth/operation-not-allowed":
-                    errorMessage = "You may not use that sign-up method.";
-                    break;
-                case "auth/weak-password":
-                    errorMessage = "Weak password. Password must have an uppercase, lowercase, symbol, and be at least 6 characters long."
-                    break;
-                case "auth/too-many-requests":
-                    errorMessage = "Too many recent requests. Try again later."
-                    break;
-                case "auth/password-does-not-meet-requirements":
-                    errorMessage = "Password does not meet requirements. It must have an uppercase, lowercase, symbol, number, and be at least 6 characters long."
-            }
-            showAlert(errorMessage)
-        }
+      await updateProfile(user, {
+        displayName: signUpData.displayName || signUpData.username,
+        photoURL: svgDataUrl,
+      });
+
+      window.location.href = "/home";
+    } catch (error) {
+      let errorMessage = "Unexpected Error " + error.code + ": " + error.message;
+      switch (error.code) {
+        case "auth/invalid-email":
+          errorMessage = "Invalid email.";
+          break;
+        case "auth/email-already-in-use":
+          errorMessage = "An account with that email already exists.";
+          break;
+        case "auth/operation-not-allowed":
+          errorMessage = "You may not use that sign-up method.";
+          break;
+        case "auth/weak-password":
+          errorMessage = "Weak password. Password must have an uppercase, lowercase, symbol, and be at least 6 characters long.";
+          break;
+        case "auth/too-many-requests":
+          errorMessage = "Too many recent requests. Try again later.";
+          break;
+        case "auth/password-does-not-meet-requirements":
+          errorMessage = "Password does not meet requirements. It must have an uppercase, lowercase, symbol, number, and be at least 6 characters long.";
+          break;
+      }
+      showAlert(errorMessage);
     }
-    function handleLogin() {
-        signInWithEmailAndPassword(auth, loginData.email, loginData.password)
-    .then((userCredential) => {
-        // Signed in 
-        const user = userCredential.user;
+  }
+
+  function handleLogin() {
+    signInWithEmailAndPassword(auth, loginData.email, loginData.password)
+      .then(() => {
         window.location.href = "/home";
-    })
-    .catch((error) => {
-        let errorCode = error.code;
+      })
+      .catch((error) => {
         let errorMessage = "Unexpected Error " + error.code + ": " + error.message;
-        switch(errorCode){
-            case "auth/user-not-found":
-                errorMessage = "Sorry, no account found with email address.";
-                break;
-            case "auth/wrong-password":
-                errorMessage = "Incorrect password.";
-                break;
-            case "auth/invalid-email":
-                errorMessage = "Invalid email."
-                break;
-            case "auth/too-many-requests":
-                errorMessage = "Too many failed attempts. Please try again later."
-                break;
-            case "auth/invalid-credential":
-                errorMessage = "The credential is invalid. Double check the password and email."
-                break;
-            case "auth/user-disabled":
-                errorMessage = "That user has been disabled by the admin."
-                break;
-            case "auth/operation-not-allowed":
-                errorMessage = "You may not use this method of sign-on.";
-                break;
-            case "auth/invalid-login-credentials":
-                errorMessage = "Email or password is wrong. Double-check and try again.";
+        switch (error.code) {
+          case "auth/user-not-found":
+            errorMessage = "Sorry, no account found with email address.";
+            break;
+          case "auth/wrong-password":
+            errorMessage = "Incorrect password.";
+            break;
+          case "auth/invalid-email":
+            errorMessage = "Invalid email.";
+            break;
+          case "auth/too-many-requests":
+            errorMessage = "Too many failed attempts. Please try again later.";
+            break;
+          case "auth/invalid-credential":
+            errorMessage = "The credential is invalid. Double check the password and email.";
+            break;
+          case "auth/user-disabled":
+            errorMessage = "That user has been disabled by the admin.";
+            break;
+          case "auth/operation-not-allowed":
+            errorMessage = "You may not use this method of sign-on.";
+            break;
+          case "auth/invalid-login-credentials":
+            errorMessage = "Email or password is wrong. Double-check and try again.";
+            break;
         }
         showAlert(errorMessage);
-    });
-    }
+      });
+  }
 
-    return (
-        <div className="signup-login-box">
-            <style>{`
-                .signup-login-box {
-                    background-color: #ffffff;
-                    color: #333333;
-                    font-family: inherit;
-                    display: flex;
-                    flex-direction: column;
-                    width: ${width || "300px"};
-                    height: ${height || "200px"};
-                    padding: 20px;
-                    border-radius: 10px;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-                    z-index: 1000;
-                }
-            `}</style>
-            {/* Signup/Login Switch Buttons */}
-            <TabBarElement>
-                <li onClick={() => setActiveTab(0)}>Sign Up</li>
-                <li onClick={() => setActiveTab(1)}>Log In</li>
-            </TabBarElement>
-            <TabContainerElement tabIndex={activeTab} className="signon-tab-container">
-                <li data-display-index="0" style={{ display: activeTab === 0 ? 'block' : 'none' }}><form onSubmit={(e) =>{e.preventDefault();handleSignUp()}}>
-                    <h1>Sign Up</h1>
-                    <input type="text" placeholder="Full Name *" onChange={(e) => setSignUpData({ ...signUpData, realName: e.target.value })}/>
-                    <br></br><br></br>
-                    <input type="text" placeholder="Display Name" onChange={(e) => setSignUpData({ ...signUpData, displayName: e.target.value })}/>
-                    <br></br><br></br>
-                    <input type="text" placeholder="Username *" onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })} />
-                    <br></br><br></br>
-                    <input type="date" placeholder="Birthday" onChange={(e) => setSignUpData({ ...signUpData, dob: e.target.value })} />
-                    <br></br><br></br>
-                    <input type="email" placeholder="Email *" onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })} />
-                    <br></br><br></br>
-                    <input type="password" autoComplete="skillmesa" placeholder="Password *" onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}/>
-                    <br></br><br></br>
-                    <button type="submit">Sign Up</button>
-                </form></li>
-                <li data-display-index="1" style={{ display: activeTab === 1 ? 'block' : 'none' }}><form onSubmit={(e) =>{e.preventDefault();handleLogin()}}>
-                    <h1>Log In</h1>
-                    <input type="text" placeholder="Email *" onChange={(e) => setLoginData({ ...loginData, email: e.target.value })} />
-                    <br></br><br></br>
-                    <input type="password" autoComplete="skillmesa" placeholder="Password *" onChange={(e) => setLoginData({ ...loginData, password: e.target.value })} />
-                    <br></br><br></br>
-                    <button type="submit">Log In</button>
-                </form></li>
-            </TabContainerElement>
+  return (
+    <Paper
+      shadow="md"
+      p="xl"
+      radius="lg"
+      style={{
+        width: width || "360px",
+        maxWidth: "95vw",
+      }}
+    >
+      <Tabs value={activeTab} onChange={setActiveTab}>
+        <Tabs.List grow mb="lg">
+          <Tabs.Tab value="signup">Sign Up</Tabs.Tab>
+          <Tabs.Tab value="login">Log In</Tabs.Tab>
+        </Tabs.List>
 
-        </div>
-    );
+        <Tabs.Panel value="signup">
+          <form onSubmit={(e) => { e.preventDefault(); handleSignUp(); }}>
+            <Stack gap="sm">
+              <Title order={2} ta="center">Sign Up</Title>
+              <TextInput
+                placeholder="Full Name *"
+                required
+                value={signUpData.realName}
+                onChange={(e) => setSignUpData({ ...signUpData, realName: e.target.value })}
+              />
+              <TextInput
+                placeholder="Display Name"
+                value={signUpData.displayName}
+                onChange={(e) => setSignUpData({ ...signUpData, displayName: e.target.value })}
+              />
+              <TextInput
+                placeholder="Username *"
+                required
+                value={signUpData.username}
+                onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
+              />
+              <TextInput
+                type="date"
+                label="Birthday"
+                value={signUpData.dob}
+                onChange={(e) => setSignUpData({ ...signUpData, dob: e.target.value })}
+              />
+              <TextInput
+                type="email"
+                placeholder="Email *"
+                required
+                value={signUpData.email}
+                onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
+              />
+              <PasswordInput
+                placeholder="Password *"
+                required
+                autoComplete="skillmesa"
+                value={signUpData.password}
+                onChange={(e) => setSignUpData({ ...signUpData, password: e.target.value })}
+              />
+              <Button type="submit" fullWidth>
+                Sign Up
+              </Button>
+            </Stack>
+          </form>
+        </Tabs.Panel>
+
+        <Tabs.Panel value="login">
+          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
+            <Stack gap="sm">
+              <Title order={2} ta="center">Log In</Title>
+              <TextInput
+                type="email"
+                placeholder="Email *"
+                required
+                value={loginData.email}
+                onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+              />
+              <PasswordInput
+                placeholder="Password *"
+                required
+                autoComplete="skillmesa"
+                value={loginData.password}
+                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+              />
+              <Button type="submit" fullWidth>
+                Log In
+              </Button>
+            </Stack>
+          </form>
+        </Tabs.Panel>
+      </Tabs>
+    </Paper>
+  );
 }
 
 export default SignonComponent;

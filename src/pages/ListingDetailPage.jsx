@@ -1,144 +1,358 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { doc, getDoc } from "firebase/firestore";
+import { useParams, useNavigate } from "react-router-dom";
+import { doc, getDoc, setDoc, updateDoc, arrayRemove, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "../firebase";
-import { LinkButton, LinkImage } from "../components/LinkElements"
-import showAlert from "../components/ShowAlert";
+import { LinkButton } from "../components/LinkElements";
+import {
+  Title, Text, Button, Group, Stack, Avatar, Badge, Divider,
+  Paper, ScrollArea, Image, Box, Grid, ActionIcon, Loader, Menu,
+} from "@mantine/core";
+import { ArrowLeft, Share2, Mail, MessageSquare, ChevronDown } from "lucide-react";
+import RichContentView from "../components/RichContentView";
+import ShareModal from "../components/ShareModal";
+import ListingFeedback from "../components/ListingFeedback";
 
 function ListingDetailPage() {
-  const { listingId } = useParams(); // route param
+  const { listingId } = useParams();
+  const navigate = useNavigate();
   const [listingData, setListingData] = useState(null);
-  const [ownerData, setOwnerData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const user = auth.currentUser
-
-  async function copyTextToClipboard(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      console.log('Text copied to clipboard');
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
-  }
-
+  const [ownerData, setOwnerData]     = useState(null);
+  const [loading, setLoading]         = useState(true);
+  const [shareOpen, setShareOpen]     = useState(false);
+  const user = auth.currentUser;
 
   useEffect(() => {
     if (!listingId) return;
-
     let isMounted = true;
 
     async function fetchListing() {
       setLoading(true);
       try {
-        // Fetch listing
-        const listingRef = doc(db, "listings", listingId);
-        const listingSnap = await getDoc(listingRef);
-
+        const listingSnap = await getDoc(doc(db, "listings", listingId));
         if (!listingSnap.exists()) {
           if (isMounted) setListingData(null);
           return;
         }
-
         const listing = { id: listingSnap.id, ...listingSnap.data() };
         if (isMounted) setListingData(listing);
 
-        // Fetch owner info (users/{ownerUID})
         if (listing.owner) {
-          const ownerRef = doc(db, "users", listing.owner);
-          const ownerSnap = await getDoc(ownerRef);
-          if (ownerSnap.exists()) {
-            if (isMounted) setOwnerData(ownerSnap.data());
-          } else {
-            if (isMounted) setOwnerData(null);
-          }
+          const ownerSnap = await getDoc(doc(db, "users", listing.owner));
+          if (isMounted) setOwnerData(ownerSnap.exists() ? ownerSnap.data() : null);
         }
       } catch (err) {
         console.error("Error fetching listing:", err);
-        if (isMounted) {
-          setListingData(null);
-          setOwnerData(null);
-        }
+        if (isMounted) { setListingData(null); setOwnerData(null); }
       } finally {
         if (isMounted) setLoading(false);
       }
     }
 
     fetchListing();
-    return () => {
-      isMounted = false;
-    };
+    return () => { isMounted = false; };
   }, [listingId]);
 
-  if (loading) return <p>Loading listing...</p>;
-  if (!listingData) return <p>Listing not found.</p>;
+  if (loading) {
+    return (
+      <Box py="xl" style={{ display: 'flex', justifyContent: 'center' }}>
+        <Loader color="gray" size="sm" />
+      </Box>
+    );
+  }
 
-  const ownerName = ownerData?.displayName || "Unknown User";
-  const profilePicUrl = ownerData?.profilePic?.currentUrl || "/assets/account1.svg";
+  if (!listingData) {
+    return <Text ta="center" py="xl" c="dimmed">Listing not found.</Text>;
+  }
+
+  const ownerName    = ownerData?.displayName || "Unknown User";
+  const profilePicUrl = ownerData?.profilePic?.currentUrl || null;
+  const isOwner      = Boolean(user && listingData.owner && user.uid === listingData.owner);
+  const isEditor     = Boolean(user && (listingData.editors || []).includes(user.uid));
+  const isArchived   = listingData.archived === true;
+  const price        = listingData.price ? `$${parseFloat(listingData.price).toFixed(2)}` : null;
+  const tags         = listingData.tags || [];
+  const online       = listingData.online;
+  const typeLabel    = listingData.type || null;
+  const typeClass    = typeLabel === "service" ? "banner-service" : "banner-class";
+  const modalClass   = online ? "banner-online" : "banner-offline";
+
+  const bannerBase = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    padding: '4px 10px',
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 600,
+    textTransform: 'capitalize',
+    letterSpacing: '0.01em',
+  };
+
+  const thumbnailSrc = listingData.thumbnailURL || null;
+  const extraImages  = listingData.images?.filter(img => img.currentUrl || img.url) || [];
 
   return (
-    <div className="listing-detail-page">
-      <div className="largelisting">
-        <title>view listing | skillmesa</title>
-        <br /><br />
-        <h1>{listingData.title || "Untitled Listing"}</h1>
+    <Stack gap={0} py="xl" px={{ base: 'md', sm: 'xl' }} maw={1200} mx="auto" className="page-enter">
+      <title>view listing | skillmesa</title>
 
-        {/* Listing images */}
-        {listingData.images && listingData.images.length > 0 && (
-          <div>
-            {listingData.images.map((img, index) => (
-              <img
-                key={index}
-                src={img.currentUrl || img.url}
-                alt={`Listing Image ${index + 1}`}
+      {/* Back row */}
+      <Group gap="xs" mb="lg">
+        <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => navigate(-1)}>
+          <ArrowLeft size={16} />
+        </ActionIcon>
+        <Text size="sm" c="dimmed" style={{ cursor: 'pointer' }} onClick={() => navigate(-1)}>
+          Back
+        </Text>
+      </Group>
+
+      <Grid gutter="xl" align="flex-start">
+
+        {/* ── Main content ───────────────────────────── */}
+        <Grid.Col span={{ base: 12, md: 7 }}>
+          <Stack gap="lg">
+            {/* Thumbnail */}
+            {thumbnailSrc && (
+              <Image
+                src={thumbnailSrc}
+                alt="Listing thumbnail"
+                radius="md"
+                style={{ width: '100%', maxHeight: 400, objectFit: 'cover' }}
               />
-            ))}
-          </div>
-        )}
+            )}
 
-        {/* Thumbnail */}
-        {listingData.thumbnailURL && (
-          <img
-            className="listing-thumbnail"
-            src={listingData.thumbnailURL}
-            alt="Listing Thumbnail"
-          />
-        )}
+            {/* Extra images */}
+            {extraImages.length > 0 && (
+              <Stack gap="sm">
+                {extraImages.map((img, i) => (
+                  <Image
+                    key={i}
+                    src={img.currentUrl || img.url}
+                    alt={`Listing image ${i + 1}`}
+                    radius="md"
+                  />
+                ))}
+              </Stack>
+            )}
 
-        <p>{listingData.description || "No description."}</p>
-        <p><strong>Price:</strong> {listingData.price ? `$${parseFloat(listingData.price).toFixed(2)}` : "Not specified"}</p>
-        <p><strong>Zip Code:</strong> <code>{listingData.zipCode ? listingData.zipCode : "Not specified"}</code></p>
-        <p><strong>Category:</strong> <code>{listingData.category ? listingData.category : "Not specified"}</code></p>
-        <p><strong>Type:</strong> <code>{listingData.type ? listingData.type : "Not specified"}</code></p>
-        <p><strong>Online: </strong> {listingData.type ? (<>{listingData.type == "online" ? "No" : "Yes"}</>) : "Not specified"}</p>
-        {/* Owner info */}
-        <div
-          className="accdisplay"
-          onClick={() => (window.location = "/profile/" + listingData.owner)}
-          style={{ cursor: "pointer" }}
-        >
-          <img
-            className="accdisplay-profilepic"
-            src={profilePicUrl}
-            alt="Owner profile"
-          />
-          <span className="accdisplay-text">{ownerName}</span>
-        </div>
+            {/* Description */}
+            <Stack gap="xs">
+              <Text fw={600} size="sm" c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }}>
+                Description
+              </Text>
+              <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+                {listingData.description || "No description provided."}
+              </Text>
+            </Stack>
 
-        <ul className="listing-tags-container">
-        {listingData.tags.map((tag, index) => (
-          <li key={index} className="listing-tag">{tag}</li>
-        ))}
-      </ul>
+            {/* Rich additional info */}
+            {listingData.richContent && (
+              <>
+                <Divider />
+                <Stack gap="xs">
+                  <Text fw={600} size="sm" c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }}>
+                    Additional Info
+                  </Text>
+                  <RichContentView content={listingData.richContent} />
+                </Stack>
+              </>
+            )}
 
-        <button disabled>Locked Resource Page (COMING SOON)</button><hr/>
-        <LinkButton to={`/manage/${listingId}`} disabled={user ? user.uid != listingData.owner : true}>Manage</LinkButton><hr/>
-        <LinkButton to={`/contact/${listingData.owner}`}>Inquire</LinkButton>
-        <hr />
-        <button onClick={() => {copyTextToClipboard("https://skill-mesa.web.app/share/" + listingData.id);showAlert(<p>Copied share link! <br /><code>{"https://skill-mesa.web.app/share/" + listingData.id}</code></p>)}}>Share</button>
-      </div>
-      <div className="listing-detail-more-details"><br/><br/><br/><h1>We apologize for the inconvenience</h1>
-            <code>Temporarily removed extra info panel</code></div>
-      </div>
+            <Divider />
+
+            {/* Metadata grid */}
+            <Grid gutter="md">
+              {listingData.category && (
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <Stack gap={2}>
+                    <Text size="xs" c="dimmed" fw={500}>Category</Text>
+                    <Text size="sm">{listingData.category}</Text>
+                  </Stack>
+                </Grid.Col>
+              )}
+              {listingData.zipCode && (
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <Stack gap={2}>
+                    <Text size="xs" c="dimmed" fw={500}>Location</Text>
+                    <Text size="sm">{listingData.zipCode}</Text>
+                  </Stack>
+                </Grid.Col>
+              )}
+              {typeLabel && (
+                <Grid.Col span={{ base: 12, sm: 6 }}>
+                  <Stack gap={2}>
+                    <Text size="xs" c="dimmed" fw={500}>Type</Text>
+                    <Text size="sm" tt="capitalize">{typeLabel}</Text>
+                  </Stack>
+                </Grid.Col>
+              )}
+              <Grid.Col span={{ base: 12, sm: 6 }}>
+                <Stack gap={2}>
+                  <Text size="xs" c="dimmed" fw={500}>Format</Text>
+                  <Text size="sm">{online ? 'Online' : 'In-Person'}</Text>
+                </Stack>
+              </Grid.Col>
+            </Grid>
+
+            {/* Tags */}
+            {tags.length > 0 && (
+              <ScrollArea scrollbarSize={4} type="hover" offsetScrollbars>
+                <Group gap={6} wrap="wrap">
+                  {tags.map((tag, i) => (
+                    <Badge key={i} variant="light" color="gray" size="sm">{tag}</Badge>
+                  ))}
+                </Group>
+              </ScrollArea>
+            )}
+          </Stack>
+        </Grid.Col>
+
+        {/* ── Sidebar ────────────────────────────────── */}
+        <Grid.Col span={{ base: 12, md: 5 }}>
+          <Paper
+            withBorder
+            p="xl"
+            radius="md"
+            className="sticky-sidebar"
+          >
+            <Stack gap="md">
+              {/* Type + modality badges */}
+              <Group gap="xs">
+                {typeLabel && (
+                  <Box className={typeClass} style={bannerBase}>{typeLabel}</Box>
+                )}
+                <Box className={modalClass} style={bannerBase}>
+                  {online ? 'Online' : 'In-Person'}
+                </Box>
+                {isArchived && (
+                  <Badge color="orange" variant="light" size="sm">Archived</Badge>
+                )}
+              </Group>
+
+              {/* Title */}
+              <Title order={2} style={{ lineHeight: 1.3 }}>
+                {listingData.title || "Untitled Listing"}
+              </Title>
+
+              {/* Price */}
+              {price && (
+                <Text size="xl" fw={700}>{price}</Text>
+              )}
+
+              <Divider />
+
+              {/* Owner */}
+              <Group
+                gap="sm"
+                style={{ cursor: 'pointer' }}
+                onClick={() => (window.location = "/profile/" + listingData.owner)}
+              >
+                <Avatar src={profilePicUrl} size={32} radius="xl" />
+                <Stack gap={0}>
+                  <Text size="xs" c="dimmed">Offered by</Text>
+                  <Text size="sm" fw={500}>{ownerName}</Text>
+                </Stack>
+              </Group>
+
+              <Divider />
+
+              {/* Actions */}
+              <Stack gap="xs">
+                {/* Archived notice */}
+                {isArchived && (
+                  <Text size="xs" c="dimmed" ta="center">
+                    This listing is archived and not accepting new inquiries.
+                  </Text>
+                )}
+                {/* Inquire submenu */}
+                <Menu position="bottom" withArrow withinPortal>
+                  <Menu.Target>
+                    <Button fullWidth rightSection={<ChevronDown size={14} />} disabled={isArchived && !isOwner && !isEditor}>
+                      Inquire
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item
+                      leftSection={<Mail size={14} />}
+                      disabled={!ownerData?.contact?.email}
+                      onClick={() => { window.open(`mailto:${ownerData?.contact?.email}`); }}
+                    >
+                      Send Email
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<MessageSquare size={14} />}
+                      onClick={async () => {
+                        if (!user) { navigate('/signon'); return; }
+                        // Inquiry chat: buyer → listing owner, tied to this listing
+                        const chatId  = `inquiry_${listingData.id}_${user.uid}`;
+                        const chatRef = doc(db, 'chats', chatId);
+                        try {
+                          const existing = await getDoc(chatRef);
+                          if (!existing.exists()) {
+                            await setDoc(chatRef, {
+                              type: 'inquiry',
+                              listingId: listingData.id,
+                              participants: [user.uid, listingData.owner],
+                              initiatedBy: user.uid,
+                              status: 'active',
+                              lastAt: serverTimestamp(),
+                              lastMessage: '',
+                              hiddenBy: [],
+                              blockedBy: [],
+                              unread: {},
+                            });
+                          } else {
+                            const data = existing.data();
+                            if ((data.hiddenBy ?? []).includes(user.uid)) {
+                              await updateDoc(chatRef, { hiddenBy: arrayRemove(user.uid) });
+                            }
+                          }
+                        } catch (e) { /* continue even if setDoc fails */ }
+                        navigate(`/inbox/${chatId}`);
+                      }}
+                    >
+                      Start Chat
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+                <Button
+                  variant="default"
+                  fullWidth
+                  leftSection={<Share2 size={14} />}
+                  onClick={() => setShareOpen(true)}
+                >
+                  Share
+                </Button>
+                {isOwner && (
+                  <LinkButton to={`/manage/${listingId}`} fullWidth variant="default">
+                    Manage
+                  </LinkButton>
+                )}
+                <Button variant="subtle" color="gray" fullWidth disabled>
+                  Resource Page (Coming Soon)
+                </Button>
+              </Stack>
+            </Stack>
+          </Paper>
+        </Grid.Col>
+
+      </Grid>
+
+      <ShareModal
+        opened={shareOpen}
+        onClose={() => setShareOpen(false)}
+        url={`${window.location.origin}/share/${listingData.id}`}
+        title={listingData.title || 'Skillmesa listing'}
+      />
+
+      <Divider mt="xl" />
+
+      <Box maw={860} w="100%">
+        <ListingFeedback
+          listingId={listingId}
+          ownerId={listingData.owner}
+          reviewCount={listingData.reviewCount ?? 0}
+        />
+      </Box>
+    </Stack>
   );
 }
 

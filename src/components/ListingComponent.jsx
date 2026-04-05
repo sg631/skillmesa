@@ -2,125 +2,221 @@ import React, { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { collection, doc, getDoc } from "firebase/firestore";
-import { LinkButton } from "./LinkElements.jsx";
+import { Link } from "react-router-dom";
+import { Card, Image, Text, Badge, Group, Stack, Avatar, Button, Box } from "@mantine/core";
+import { Star, StarHalf } from "lucide-react";
+
+const bannerBase = {
+  flex: 1,
+  padding: '7px 12px',
+  textAlign: 'center',
+  fontSize: 13,
+  fontWeight: 600,
+  textTransform: 'capitalize',
+  letterSpacing: '0.01em',
+};
 
 function ListingComponent({ id }) {
   const listings = collection(db, "listings");
 
   const [currentUser, setCurrentUser] = useState(null);
-  const [title, setTitle] = useState("Loading...");
-  const [description, setDescription] = useState("Loading...");
-  const [ownerUID, setOwnerUID] = useState(null);
-  const [ownerName, setOwnerName] = useState("Loading...");
+  const [title, setTitle]             = useState("Loading...");
+  const [description, setDescription] = useState("");
+  const [ownerUID, setOwnerUID]       = useState(null);
+  const [ownerName, setOwnerName]     = useState("Loading...");
   const [profilePicUrl, setProfilePicUrl] = useState("");
-  const [tags, setTags] = useState([]);
+  const [tags, setTags]               = useState([]);
   const [thumbnailUrl, setThumbnailUrl] = useState("");
-  const [type, setType] = useState("");
-  const [online, setOnline] = useState("");
-  const [zipCode, setZipCode] = useState("");
+  const [type, setType]               = useState("");
+  const [online, setOnline]           = useState(null);
+  const [zipCode, setZipCode]         = useState("");
+  const [archived, setArchived]       = useState(false);
+  const [rating, setRating]           = useState(null);
+  const [reviewCount, setReviewCount] = useState(0);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setCurrentUser(u);
-    });
+    const unsubscribe = onAuthStateChanged(auth, (u) => setCurrentUser(u));
     return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     async function fetchListing() {
       try {
-        const listingDoc = doc(listings, id);
-        const listingSnap = await getDoc(listingDoc);
-
-        if (listingSnap.exists()) {
-          const data = listingSnap.data();
+        const snap = await getDoc(doc(listings, id));
+        if (snap.exists()) {
+          const data = snap.data();
           setTitle(data.title);
-          setDescription(data.description);
+          setDescription(data.description || "");
           setTags(data.tags || []);
           setOwnerUID(data.owner || null);
           setThumbnailUrl(data.thumbnailURL || "");
-          setType(data.type);
+          setType(data.type || "");
           setOnline(data.online);
-          setZipCode(data.zipCode);
+          setZipCode(data.zipCode || "");
+          setArchived(data.archived || false);
+          setRating(data.rating ?? null);
+          setReviewCount(data.reviewCount ?? 0);
         } else {
           setTitle("Listing not found");
-          setDescription("");
-          setTags([]);
         }
-      } catch (error) {
-        console.error("Error fetching listing:", error);
+      } catch (err) {
+        console.error("Error fetching listing:", err);
       }
     }
-
     fetchListing();
   }, [id]);
 
   useEffect(() => {
-    async function fetchOwnerData() {
+    async function fetchOwner() {
       if (!ownerUID) return;
       try {
-        const userDocRef = doc(db, "users", ownerUID);
-        const userSnap = await getDoc(userDocRef);
-
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          setOwnerName(userData.displayName || "Unnamed User");
-          setProfilePicUrl(userData.profilePic?.currentUrl || "");
+        const snap = await getDoc(doc(db, "users", ownerUID));
+        if (snap.exists()) {
+          const d = snap.data();
+          setOwnerName(d.displayName || "Unnamed User");
+          setProfilePicUrl(d.profilePic?.currentUrl || "");
         } else {
           setOwnerName("Unknown User");
-          setProfilePicUrl("");
         }
-      } catch (error) {
-        console.error("Error fetching owner data:", error);
+      } catch (err) {
+        console.error("Error fetching owner:", err);
       }
     }
-
-    fetchOwnerData();
+    fetchOwner();
   }, [ownerUID]);
 
   const isOwner = Boolean(currentUser && ownerUID && currentUser.uid === ownerUID);
 
+  const typeClass  = type === "service" ? "banner-service" : "banner-class";
+  const modalClass = online ? "banner-online" : "banner-offline";
+
   return (
-    <div className="listing">
-      <span className="listing-type-label" data-value={type}>{type}</span>
-      <span
-        className="listing-online-label"
-        data-value={online ? "online" : "in-person"}
-      >
-        {online ? "online" : "in-person"}
-      </span>
-      <span className="listing-zip-label" data-value={zipCode}><code>{zipCode}</code></span>
-      <hr />
-      <img className="listing-thumbnail" alt="Listing thumbnail" src={thumbnailUrl}/>
-      <span className="listing-title">{title}</span>
-      <p className="listing-description">{description}</p>
+    <Card
+      className="listing-card"
+      style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}
+    >
+      {/* Top banners */}
+      <Card.Section>
+        <Box style={{ display: 'flex' }}>
+          <Box
+            className={typeClass}
+            style={{ ...bannerBase, borderRight: '1px solid rgba(128,128,128,0.15)' }}
+          >
+            {type || '—'}
+          </Box>
+          <Box className={modalClass} style={bannerBase}>
+            {online === null ? '—' : online ? 'Online' : 'In-Person'}
+          </Box>
+        </Box>
+        {archived && (
+          <Box
+            style={{
+              padding: '3px 12px',
+              textAlign: 'center',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              background: 'rgba(234, 88, 12, 0.15)',
+              color: '#ea580c',
+              borderBottom: '1px solid rgba(234,88,12,0.15)',
+            }}
+          >
+            Archived
+          </Box>
+        )}
+        {zipCode && (
+          <Box
+            className="banner-zip"
+            style={{
+              padding: '3px 12px',
+              textAlign: 'center',
+              fontSize: 12,
+              fontWeight: 500,
+              borderBottom: '1px solid rgba(128,128,128,0.10)',
+            }}
+          >
+            {zipCode}
+          </Box>
+        )}
+      </Card.Section>
 
-      <ul className="listing-tags-container">
-        {tags.map((tag, index) => (
-          <li key={index} className="listing-tag">{tag}</li>
-        ))}
-      </ul>
+      {/* Thumbnail */}
+      <Card.Section>
+        <Image
+          src={thumbnailUrl || null}
+          h={{ base: 150, sm: 180 }}
+          alt="Listing thumbnail"
+          fallbackSrc="https://placehold.co/400x180/f4f4f5/a1a1aa?text=No+Image"
+        />
+      </Card.Section>
 
-      <div className="controls-acc">
-        <div className="accdisplay" onClick={() => window.location = "/profile/" + ownerUID}>
-          <img
-            className="accdisplay-profilepic"
-            src={profilePicUrl || "/assets/account1.svg"}
-            alt="Owner profile"
-          />
-          <span className="accdisplay-text">{ownerName}</span>
-        </div>
+      {/* Content */}
+      <Stack gap="xs" p="md" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <Text fw={600} size="md" lineClamp={2}>
+          {title}
+        </Text>
 
-        <hr />
-        <LinkButton to={`/listing/${id}`} className="fullwidth">
-          View Listing
-        </LinkButton>
-        <hr />
-        <LinkButton disabled={!isOwner} to={`/manage/${id}`} className="fullwidth">
-          Manage Listing
-        </LinkButton>
-      </div>
-    </div>
+        <Text size="sm" c="dimmed" lineClamp={3} style={{ flex: 1 }}>
+          {description || '\u00a0'}
+        </Text>
+
+        {rating !== null && (
+          <Group gap={4} align="center">
+            {/* rating is 1–10; half-star if the rounded value is odd */}
+            {Math.round(rating) % 2 !== 0 ? (
+              <StarHalf
+                size={12}
+                fill="var(--mantine-color-yellow-5)"
+                color="var(--mantine-color-yellow-5)"
+              />
+            ) : (
+              <Star
+                size={12}
+                fill="var(--mantine-color-yellow-5)"
+                color="var(--mantine-color-yellow-5)"
+              />
+            )}
+            <Text size="xs" fw={600}>{rating.toFixed(1)}/10</Text>
+            {reviewCount > 0 && (
+              <Text size="xs" c="dimmed">({reviewCount})</Text>
+            )}
+          </Group>
+        )}
+
+        <Box>
+          {tags.length > 0 && (
+            <Group gap={4} wrap="wrap">
+              {tags.slice(0, 5).map((tag, i) => (
+                <Badge key={i} variant="light" size="xs" color="gray">{tag}</Badge>
+              ))}
+            </Group>
+          )}
+        </Box>
+
+        <Stack gap="xs" mt="auto" pt="xs" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
+          <Group
+            gap="xs"
+            style={{ cursor: "pointer" }}
+            onClick={() => (window.location = "/profile/" + ownerUID)}
+          >
+            <Avatar src={profilePicUrl || null} size={24} radius="xl" />
+            <Text size="xs" c="dimmed" truncate>{ownerName}</Text>
+          </Group>
+
+          <Group gap="xs">
+            <Button component={Link} to={`/listing/${id}`} variant="default" size="xs" style={{ flex: 1 }}>
+              View
+            </Button>
+            {isOwner && (
+              <Button component={Link} to={`/manage/${id}`} variant="default" size="xs">
+                Manage
+              </Button>
+            )}
+          </Group>
+        </Stack>
+      </Stack>
+    </Card>
   );
 }
 
