@@ -3,13 +3,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc, setDoc, updateDoc, arrayRemove, serverTimestamp } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { LinkButton } from "../components/LinkElements";
-import showAlert from "../components/ShowAlert";
 import {
   Title, Text, Button, Group, Stack, Avatar, Badge, Divider,
-  Paper, Code, ScrollArea, Image, Box, Grid, ActionIcon, Loader, Menu,
+  Paper, ScrollArea, Image, Box, Grid, ActionIcon, Loader, Menu,
 } from "@mantine/core";
 import { ArrowLeft, Share2, Mail, MessageSquare, ChevronDown } from "lucide-react";
 import RichContentView from "../components/RichContentView";
+import ShareModal from "../components/ShareModal";
+import ListingFeedback from "../components/ListingFeedback";
 
 function ListingDetailPage() {
   const { listingId } = useParams();
@@ -17,15 +18,8 @@ function ListingDetailPage() {
   const [listingData, setListingData] = useState(null);
   const [ownerData, setOwnerData]     = useState(null);
   const [loading, setLoading]         = useState(true);
+  const [shareOpen, setShareOpen]     = useState(false);
   const user = auth.currentUser;
-
-  async function copyTextToClipboard(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
-  }
 
   useEffect(() => {
     if (!listingId) return;
@@ -73,6 +67,8 @@ function ListingDetailPage() {
   const ownerName    = ownerData?.displayName || "Unknown User";
   const profilePicUrl = ownerData?.profilePic?.currentUrl || null;
   const isOwner      = Boolean(user && listingData.owner && user.uid === listingData.owner);
+  const isEditor     = Boolean(user && (listingData.editors || []).includes(user.uid));
+  const isArchived   = listingData.archived === true;
   const price        = listingData.price ? `$${parseFloat(listingData.price).toFixed(2)}` : null;
   const tags         = listingData.tags || [];
   const online       = listingData.online;
@@ -226,6 +222,9 @@ function ListingDetailPage() {
                 <Box className={modalClass} style={bannerBase}>
                   {online ? 'Online' : 'In-Person'}
                 </Box>
+                {isArchived && (
+                  <Badge color="orange" variant="light" size="sm">Archived</Badge>
+                )}
               </Group>
 
               {/* Title */}
@@ -257,10 +256,16 @@ function ListingDetailPage() {
 
               {/* Actions */}
               <Stack gap="xs">
+                {/* Archived notice */}
+                {isArchived && (
+                  <Text size="xs" c="dimmed" ta="center">
+                    This listing is archived and not accepting new inquiries.
+                  </Text>
+                )}
                 {/* Inquire submenu */}
                 <Menu position="bottom" withArrow withinPortal>
                   <Menu.Target>
-                    <Button fullWidth rightSection={<ChevronDown size={14} />}>
+                    <Button fullWidth rightSection={<ChevronDown size={14} />} disabled={isArchived && !isOwner && !isEditor}>
                       Inquire
                     </Button>
                   </Menu.Target>
@@ -276,16 +281,18 @@ function ListingDetailPage() {
                       leftSection={<MessageSquare size={14} />}
                       onClick={async () => {
                         if (!user) { navigate('/signon'); return; }
-                        const chatId = [user.uid, listingData.owner].sort().join('_');
+                        // Inquiry chat: buyer → listing owner, tied to this listing
+                        const chatId  = `inquiry_${listingData.id}_${user.uid}`;
                         const chatRef = doc(db, 'chats', chatId);
                         try {
                           const existing = await getDoc(chatRef);
                           if (!existing.exists()) {
                             await setDoc(chatRef, {
-                              participants: [user.uid, listingData.owner].sort(),
+                              type: 'inquiry',
+                              listingId: listingData.id,
+                              participants: [user.uid, listingData.owner],
                               initiatedBy: user.uid,
                               status: 'active',
-                              requestSource: 'listing',
                               lastAt: serverTimestamp(),
                               lastMessage: '',
                               hiddenBy: [],
@@ -294,18 +301,12 @@ function ListingDetailPage() {
                             });
                           } else {
                             const data = existing.data();
-                            const updates = {};
-                            if (data.status === 'pending' && data.initiatedBy !== user.uid) {
-                              updates.status = 'active';
-                            }
                             if ((data.hiddenBy ?? []).includes(user.uid)) {
-                              await updateDoc(chatRef, { hiddenBy: arrayRemove(user.uid), ...updates });
-                            } else if (Object.keys(updates).length > 0) {
-                              await updateDoc(chatRef, updates);
+                              await updateDoc(chatRef, { hiddenBy: arrayRemove(user.uid) });
                             }
                           }
                         } catch (e) { /* continue even if setDoc fails */ }
-                        navigate(`/chat/${listingData.owner}`);
+                        navigate(`/inbox/${chatId}`);
                       }}
                     >
                       Start Chat
@@ -316,11 +317,7 @@ function ListingDetailPage() {
                   variant="default"
                   fullWidth
                   leftSection={<Share2 size={14} />}
-                  onClick={() => {
-                    const url = "https://skill-mesa.web.app/share/" + listingData.id;
-                    copyTextToClipboard(url);
-                    showAlert(<p>Copied share link! <br /><Code>{url}</Code></p>);
-                  }}
+                  onClick={() => setShareOpen(true)}
                 >
                   Share
                 </Button>
@@ -338,6 +335,23 @@ function ListingDetailPage() {
         </Grid.Col>
 
       </Grid>
+
+      <ShareModal
+        opened={shareOpen}
+        onClose={() => setShareOpen(false)}
+        url={`${window.location.origin}/share/${listingData.id}`}
+        title={listingData.title || 'Skillmesa listing'}
+      />
+
+      <Divider mt="xl" />
+
+      <Box maw={860} w="100%">
+        <ListingFeedback
+          listingId={listingId}
+          ownerId={listingData.owner}
+          reviewCount={listingData.reviewCount ?? 0}
+        />
+      </Box>
     </Stack>
   );
 }

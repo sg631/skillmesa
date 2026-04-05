@@ -51,6 +51,8 @@ function buildAlgoliaRecord(docId, data, ownerData) {
     title: data.title || "",
     description: data.description || "",
     owner: data.owner || "",
+    ownerType: data.ownerType || "user",
+    ownerGroupId: data.ownerGroupId || null,
     ownerDisplayName: ownerData.ownerDisplayName,
     ownerProfilePicUrl: ownerData.ownerProfilePicUrl,
     rating: data.rating ?? -1,
@@ -82,16 +84,20 @@ async function backfill() {
   const ownerCache = new Map();
   const records = [];
 
+  let skipped = 0;
   for (const doc of listingsSnap.docs) {
     const data = doc.data();
-    const ownerUid = data.owner;
 
+    // Skip archived listings — they should not appear in search results
+    if (data.archived === true) { skipped++; continue; }
+
+    const ownerUid = data.owner;
     if (!ownerCache.has(ownerUid)) {
       ownerCache.set(ownerUid, await fetchOwnerData(ownerUid));
     }
-
     records.push(buildAlgoliaRecord(doc.id, data, ownerCache.get(ownerUid)));
   }
+  if (skipped > 0) console.log(`Skipped ${skipped} archived listing(s).`);
 
   console.log(`Pushing ${records.length} records to Algolia index "${ALGOLIA_INDEX}"...`);
   const response = await algolia.saveObjects({

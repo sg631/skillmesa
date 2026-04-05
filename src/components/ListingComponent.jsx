@@ -4,6 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { collection, doc, getDoc } from "firebase/firestore";
 import { Link } from "react-router-dom";
 import { Card, Image, Text, Badge, Group, Stack, Avatar, Button, Box } from "@mantine/core";
+import { Star, StarHalf } from "lucide-react";
 
 const bannerBase = {
   flex: 1,
@@ -29,6 +30,9 @@ function ListingComponent({ id }) {
   const [type, setType]               = useState("");
   const [online, setOnline]           = useState(null);
   const [zipCode, setZipCode]         = useState("");
+  const [archived, setArchived]       = useState(false);
+  const [rating, setRating]           = useState(null);
+  const [reviewCount, setReviewCount] = useState(0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setCurrentUser(u));
@@ -49,6 +53,9 @@ function ListingComponent({ id }) {
           setType(data.type || "");
           setOnline(data.online);
           setZipCode(data.zipCode || "");
+          setArchived(data.archived || false);
+          setRating(data.rating ?? null);
+          setReviewCount(data.reviewCount ?? 0);
         } else {
           setTitle("Listing not found");
         }
@@ -101,6 +108,23 @@ function ListingComponent({ id }) {
             {online === null ? '—' : online ? 'Online' : 'In-Person'}
           </Box>
         </Box>
+        {archived && (
+          <Box
+            style={{
+              padding: '3px 12px',
+              textAlign: 'center',
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              background: 'rgba(234, 88, 12, 0.15)',
+              color: '#ea580c',
+              borderBottom: '1px solid rgba(234,88,12,0.15)',
+            }}
+          >
+            Archived
+          </Box>
+        )}
         {zipCode && (
           <Box
             className="banner-zip"
@@ -136,6 +160,29 @@ function ListingComponent({ id }) {
         <Text size="sm" c="dimmed" lineClamp={3} style={{ flex: 1 }}>
           {description || '\u00a0'}
         </Text>
+
+        {rating !== null && (
+          <Group gap={4} align="center">
+            {/* rating is 1–10; half-star if the rounded value is odd */}
+            {Math.round(rating) % 2 !== 0 ? (
+              <StarHalf
+                size={12}
+                fill="var(--mantine-color-yellow-5)"
+                color="var(--mantine-color-yellow-5)"
+              />
+            ) : (
+              <Star
+                size={12}
+                fill="var(--mantine-color-yellow-5)"
+                color="var(--mantine-color-yellow-5)"
+              />
+            )}
+            <Text size="xs" fw={600}>{rating.toFixed(1)}/10</Text>
+            {reviewCount > 0 && (
+              <Text size="xs" c="dimmed">({reviewCount})</Text>
+            )}
+          </Group>
+        )}
 
         <Box>
           {tags.length > 0 && (

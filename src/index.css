@@ -100,6 +100,12 @@ html[data-mantine-color-scheme="dark"] body { background-color: #09090b; }
 [data-mantine-color-scheme="dark"] .banner-offline { background: rgba( 13,148, 136, 0.25); color: #5eead4; }
 [data-mantine-color-scheme="dark"] .banner-zip     { background: rgba( 82, 82,  91, 0.35); color: #a1a1aa; }
 
+/* ── Avatar placeholder background ─────────────────────────── */
+.mantine-Avatar-placeholder {
+  background-color: #9df7ff !important;
+  color: #0a5560 !important; /* dark teal — readable on the light cyan */
+}
+
 /* ── Sticky sidebar — only activates on md+ ────────────────── */
 /* On mobile the Grid columns stack vertically, so sticky causes overlap. */
 .sticky-sidebar { position: sticky; top: 76px; }

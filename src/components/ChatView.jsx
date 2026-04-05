@@ -11,21 +11,22 @@ import {
   Paper, ScrollArea, Divider, Loader, Modal, Tooltip, Menu,
   useComputedColorScheme,
 } from '@mantine/core';
-import { ArrowLeft, Send, Paperclip, MoreVertical, ShieldOff, Shield, Check, X, Clock, ExternalLink } from 'lucide-react';
+import {
+  ArrowLeft, Send, Paperclip, MoreVertical, ShieldOff, Shield,
+  Check, X, Clock, ExternalLink, Users, Tag,
+} from 'lucide-react';
 import ListingReferenceCard from './ListingReferenceCard';
 
 const LISTING_URL_RE = /https?:\/\/skill-mesa\.web\.app\/listing\/([a-zA-Z0-9]+)/;
-// Matches any http/https URL; trailing punctuation trimmed below
 const ANY_URL_RE = /https?:\/\/[^\s]+/g;
 
-// Split text into {type:'text'}, {type:'listing', listingId}, {type:'link', url} parts
 function parseMessageParts(text) {
   const parts = [];
   let lastIndex = 0;
   const re = new RegExp(ANY_URL_RE.source, 'g');
   let match;
   while ((match = re.exec(text)) !== null) {
-    const raw = match[0].replace(/[.,!?;:)>\]]+$/, ''); // strip trailing punctuation
+    const raw = match[0].replace(/[.,!?;:)>\]]+$/, '');
     if (match.index > lastIndex) {
       parts.push({ type: 'text', content: text.slice(lastIndex, match.index) });
     }
@@ -45,23 +46,18 @@ function LinkPreview({ url }) {
   const isDark = useComputedColorScheme('light') === 'dark';
   let domain = url;
   try { domain = new URL(url).hostname.replace(/^www\./, ''); } catch {}
-
   const cardBg = isDark ? 'var(--mantine-color-dark-5)' : 'var(--mantine-color-gray-0)';
-
   return (
     <Paper withBorder radius="md" p="xs" style={{ background: cardBg, minWidth: 180 }}>
       <Text size="xs" c="dimmed" truncate mb={6}>{domain}</Text>
-      <Button
-        component="a" href={url} target="_blank" rel="noopener noreferrer"
-        size="xs" variant="default" leftSection={<ExternalLink size={11} />}
-      >
+      <Button component="a" href={url} target="_blank" rel="noopener noreferrer"
+        size="xs" variant="default" leftSection={<ExternalLink size={11} />}>
         Open link
       </Button>
     </Paper>
   );
 }
 
-// Renders inline text with clickable URL anchors (no card previews — handled in MessageBubble)
 function MessageContent({ parts }) {
   const inlineParts = parts.filter(p => p.type !== 'listing');
   const hasText = inlineParts.some(p => p.type === 'link' || p.content?.trim());
@@ -108,20 +104,20 @@ function DateDivider({ label }) {
   );
 }
 
-function MessageBubble({ msg, isOwn }) {
+function MessageBubble({ msg, isOwn, senderName, showSender }) {
   const isDark = useComputedColorScheme('light') === 'dark';
   const ownBg    = isDark ? 'rgba(165,180,252,0.14)' : 'var(--mantine-color-dark-8)';
   const ownColor = isDark ? 'var(--accent-hex)' : '#ffffff';
   const otherBg  = isDark ? 'var(--mantine-color-dark-5)' : 'var(--mantine-color-gray-1)';
 
-  // Explicitly-shared listing (via picker)
   if (msg.type === 'listing') {
     return (
-      <Box style={{ display: 'flex', justifyContent: isOwn ? 'flex-end' : 'flex-start' }}>
-        <Box>
-          <ListingReferenceCard listingId={msg.listingId} />
-          <Text size="xs" c="dimmed" ta={isOwn ? 'right' : 'left'} mt={2}>{formatTime(msg.sentAt)}</Text>
-        </Box>
+      <Box style={{ display: 'flex', flexDirection: 'column', alignItems: isOwn ? 'flex-end' : 'flex-start' }}>
+        {showSender && !isOwn && (
+          <Text size="xs" c="dimmed" mb={2} ml={4}>{senderName}</Text>
+        )}
+        <ListingReferenceCard listingId={msg.listingId} />
+        <Text size="xs" c="dimmed" ta={isOwn ? 'right' : 'left'} mt={2}>{formatTime(msg.sentAt)}</Text>
       </Box>
     );
   }
@@ -137,15 +133,16 @@ function MessageBubble({ msg, isOwn }) {
         maxWidth: 'min(72%, 480px)', display: 'flex', flexDirection: 'column',
         alignItems: isOwn ? 'flex-end' : 'flex-start', gap: 4,
       }}>
-        {/* Text bubble */}
+        {showSender && !isOwn && (
+          <Text size="xs" c="dimmed" ml={4}>{senderName}</Text>
+        )}
         {hasText && (
-          <Paper px="sm" py="xs" radius="md" style={{ background: isOwn ? ownBg : otherBg, color: isOwn ? ownColor : 'inherit' }}>
+          <Paper px="sm" py="xs" radius="md"
+            style={{ background: isOwn ? ownBg : otherBg, color: isOwn ? ownColor : 'inherit' }}>
             <MessageContent parts={parts} />
           </Paper>
         )}
-        {/* Listing cards embedded in text */}
         {listingParts.map((p, i) => <ListingReferenceCard key={`l-${i}`} listingId={p.listingId} />)}
-        {/* Link previews */}
         {linkParts.map((p, i) => <LinkPreview key={`p-${i}`} url={p.url} />)}
         <Text size="xs" c="dimmed" ta={isOwn ? 'right' : 'left'}>{formatTime(msg.sentAt)}</Text>
       </Box>
@@ -153,58 +150,112 @@ function MessageBubble({ msg, isOwn }) {
   );
 }
 
-// ChatView — renders the full chat UI for a given otherUID.
-// showBackButton: show ← arrow in header (for standalone ChatPage)
-export default function ChatView({ otherUID, showBackButton = false }) {
+// ChatView — supports DM, inquiry, and group chats.
+// Primary prop: chatId (full Firestore doc ID)
+// Legacy/compat: otherUID (used by ChatPage; computes DM chatId internally)
+export default function ChatView({ chatId: chatIdProp, otherUID, showBackButton = false }) {
   const navigate    = useNavigate();
   const currentUser = auth.currentUser;
 
+  // Resolve final chatId
+  const chatId = chatIdProp || (currentUser && otherUID
+    ? [currentUser.uid, otherUID].sort().join('_')
+    : null);
+
+  const [chatData, setChatData]             = useState(undefined);
+  const [messages, setMessages]             = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [messageText, setMessageText]       = useState('');
+  const [sending, setSending]               = useState(false);
+  const [pickerOpen, setPickerOpen]         = useState(false);
+  const [pickerListings, setPickerListings] = useState([]);
+  const [actionLoading, setActionLoading]   = useState(false);
+
+  // Type-specific state
   const [otherUser, setOtherUser]             = useState(null);
   const [currentUserData, setCurrentUserData] = useState(null);
-  const [chatData, setChatData]               = useState(undefined);
-  const [messages, setMessages]               = useState([]);
-  const [loading, setLoading]                 = useState(true);
-  const [messageText, setMessageText]         = useState('');
-  const [sending, setSending]                 = useState(false);
-  const [pickerOpen, setPickerOpen]           = useState(false);
-  const [pickerListings, setPickerListings]   = useState([]);
-  const [actionLoading, setActionLoading]     = useState(false);
+  const [listingData, setListingData]         = useState(null);
+  const [groupData, setGroupData]             = useState(null);
+  // Group sender names cache: { uid: displayName }
+  const [senderNames, setSenderNames]         = useState({});
 
   const viewportRef = useRef(null);
   const textareaRef = useRef(null);
 
-  const chatId = currentUser && otherUID
-    ? [currentUser.uid, otherUID].sort().join('_')
-    : null;
+  const chatType = chatData?.type || 'dm';
 
+  // For DM/inquiry: the other participant's UID
+  const derivedOtherUID = chatData?.participants?.find(p => p !== currentUser?.uid);
+  const effectiveOtherUID = chatType !== 'group' ? (otherUID || derivedOtherUID) : null;
+
+  // Chat state
   const blockedBy        = chatData?.blockedBy ?? [];
   const isBlockedByMe    = blockedBy.includes(currentUser?.uid);
   const isBlocked        = blockedBy.length > 0;
-  const isPendingRequest = chatData?.status === 'pending' && chatData?.initiatedBy !== currentUser?.uid;
-  const isWaitingReply   = chatData?.status === 'pending' && chatData?.initiatedBy === currentUser?.uid;
-  const isDeclined       = chatData?.status === 'declined';
+  const isPendingRequest = chatType === 'dm' && chatData?.status === 'pending' && chatData?.initiatedBy !== currentUser?.uid;
+  const isWaitingReply   = chatType === 'dm' && chatData?.status === 'pending' && chatData?.initiatedBy === currentUser?.uid;
+  const isDeclined       = chatType === 'dm' && chatData?.status === 'declined';
   const canSend          = !isBlocked && !isPendingRequest && !isDeclined && chatData !== undefined;
 
-  // Reset per conversation
+  // Reset on chatId change
   useEffect(() => {
     setMessages([]);
     setLoading(true);
     setChatData(undefined);
     setOtherUser(null);
+    setListingData(null);
+    setGroupData(null);
+    setSenderNames({});
     setMessageText('');
-  }, [otherUID]);
+  }, [chatId]);
 
+  // Load current user data
   useEffect(() => {
-    if (!otherUID) return;
-    Promise.all([
-      getDoc(doc(db, 'users', otherUID)),
-      currentUser ? getDoc(doc(db, 'users', currentUser.uid)) : null,
-    ]).then(([otherSnap, selfSnap]) => {
-      if (otherSnap.exists()) setOtherUser(otherSnap.data());
-      if (selfSnap?.exists()) setCurrentUserData(selfSnap.data());
-    }).catch(console.error);
-  }, [otherUID]);
+    if (!currentUser) return;
+    getDoc(doc(db, 'users', currentUser.uid))
+      .then(snap => { if (snap.exists()) setCurrentUserData(snap.data()); })
+      .catch(console.error);
+  }, [currentUser?.uid]);
 
+  // Load other user data (DM / inquiry)
+  useEffect(() => {
+    if (!effectiveOtherUID) return;
+    getDoc(doc(db, 'users', effectiveOtherUID))
+      .then(snap => { if (snap.exists()) setOtherUser(snap.data()); })
+      .catch(console.error);
+  }, [effectiveOtherUID]);
+
+  // Load listing data (inquiry chats)
+  useEffect(() => {
+    if (chatType !== 'inquiry' || !chatData?.listingId) return;
+    getDoc(doc(db, 'listings', chatData.listingId))
+      .then(snap => { if (snap.exists()) setListingData({ id: snap.id, ...snap.data() }); })
+      .catch(console.error);
+  }, [chatData?.listingId, chatType]);
+
+  // Load group data (group chats)
+  useEffect(() => {
+    if (chatType !== 'group' || !chatData?.groupId) return;
+    getDoc(doc(db, 'groups', chatData.groupId))
+      .then(snap => { if (snap.exists()) setGroupData({ id: snap.id, ...snap.data() }); })
+      .catch(console.error);
+  }, [chatData?.groupId, chatType]);
+
+  // Load sender names for group chats
+  useEffect(() => {
+    if (chatType !== 'group' || !chatData?.participants?.length) return;
+    const unknowns = chatData.participants.filter(uid => uid !== currentUser?.uid && !senderNames[uid]);
+    if (!unknowns.length) return;
+    Promise.all(unknowns.map(uid => getDoc(doc(db, 'users', uid)))).then(snaps => {
+      const names = {};
+      snaps.forEach((snap, i) => {
+        if (snap.exists()) names[unknowns[i]] = snap.data().displayName || 'Unknown';
+      });
+      setSenderNames(prev => ({ ...prev, ...names }));
+    }).catch(console.error);
+  }, [chatData?.participants, chatType]);
+
+  // Subscribe to chatData
   useEffect(() => {
     if (!chatId) { setChatData(null); return; }
     return onSnapshot(doc(db, 'chats', chatId), snap => {
@@ -212,6 +263,7 @@ export default function ChatView({ otherUID, showBackButton = false }) {
     }, () => setChatData(null));
   }, [chatId]);
 
+  // Subscribe to messages
   useEffect(() => {
     if (!chatId) { setLoading(false); return; }
     const q = query(collection(db, 'chats', chatId, 'messages'), orderBy('sentAt'));
@@ -224,6 +276,7 @@ export default function ChatView({ otherUID, showBackButton = false }) {
     }, () => setLoading(false));
   }, [chatId]);
 
+  // Mark as read
   useEffect(() => {
     if (!chatId || !currentUser) return;
     updateDoc(doc(db, 'chats', chatId), { [`unread.${currentUser.uid}`]: 0 }).catch(() => {});
@@ -270,19 +323,23 @@ export default function ChatView({ otherUID, showBackButton = false }) {
         ...(type === 'listing' ? { listingId } : {}),
       });
       const preview = type === 'listing' ? '📎 Shared a listing' : text.slice(0, 100);
+      const otherParticipants = (chatData?.participants || []).filter(p => p !== currentUser.uid);
+      const incrementUpdates = {};
+      otherParticipants.forEach(uid => { incrementUpdates[`unread.${uid}`] = increment(1); });
       await setDoc(doc(db, 'chats', chatId), {
-        participants: [currentUser.uid, otherUID].sort(),
-        lastMessage: preview, lastAt: serverTimestamp(),
-        [`unread.${otherUID}`]: increment(1),
+        lastMessage: preview, lastAt: serverTimestamp(), ...incrementUpdates,
       }, { merge: true });
+
       const senderName = currentUserData?.displayName || 'Someone';
       const notifMsg = type === 'listing'
         ? `${senderName} shared a listing with you`
         : `${senderName}: ${text.slice(0, 60)}${text.length > 60 ? '…' : ''}`;
-      await addDoc(collection(db, 'notifications', otherUID, 'items'), {
-        type: 'message', message: notifMsg, read: false,
-        createdAt: serverTimestamp(), link: `/inbox/${currentUser.uid}`,
-      });
+      await Promise.all(otherParticipants.map(uid =>
+        addDoc(collection(db, 'notifications', uid, 'items'), {
+          type: 'message', message: notifMsg, read: false,
+          createdAt: serverTimestamp(), link: `/inbox/${chatId}`,
+        }).catch(() => {})
+      ));
     } catch (err) {
       console.error('Failed to send:', err);
       if (type === 'text') setMessageText(text);
@@ -302,7 +359,7 @@ export default function ChatView({ otherUID, showBackButton = false }) {
   }
 
   if (!currentUser) return <Text ta="center" py="xl" c="dimmed">Sign in to chat.</Text>;
-  if (!otherUID) return (
+  if (!chatId) return (
     <Box style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <Text c="dimmed" size="sm">Select a conversation to start messaging.</Text>
     </Box>
@@ -316,52 +373,88 @@ export default function ChatView({ otherUID, showBackButton = false }) {
     items.push(msg);
   }
 
+  const headerBorderStyle = { flexShrink: 0, padding: '10px 16px', borderBottom: '1px solid var(--mantine-color-default-border)', display: 'flex', alignItems: 'center', gap: 12 };
+  const bannerStyle = { flexShrink: 0, padding: '6px 16px', borderBottom: '1px solid var(--mantine-color-default-border)', background: 'var(--mantine-color-default-hover)' };
+
   return (
     <Box style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
 
       {/* ── Header ── */}
-      <Box style={{
-        flexShrink: 0, padding: '10px 16px',
-        borderBottom: '1px solid var(--mantine-color-default-border)',
-        display: 'flex', alignItems: 'center', gap: 12,
-      }}>
+      <Box style={headerBorderStyle}>
         {showBackButton && (
           <ActionIcon variant="subtle" color="gray" onClick={() => navigate(-1)}>
             <ArrowLeft size={16} />
           </ActionIcon>
         )}
-        <Avatar
-          src={otherUser?.profilePic?.currentUrl || null} size={36} radius="xl"
-          style={{ cursor: 'pointer', flexShrink: 0 }}
-          onClick={() => navigate(`/profile/${otherUID}`)}
-        />
-        <Box style={{ flex: 1, minWidth: 0 }}>
-          <Text fw={600} size="sm" truncate>{otherUser?.displayName || '…'}</Text>
-          {otherUser?.username && <Text size="xs" c="dimmed" truncate>@{otherUser.username}</Text>}
-        </Box>
-        <Menu shadow="md" position="bottom-end">
-          <Menu.Target>
-            <ActionIcon variant="subtle" color="gray" loading={actionLoading}>
-              <MoreVertical size={16} />
-            </ActionIcon>
-          </Menu.Target>
-          <Menu.Dropdown>
-            {isBlockedByMe ? (
-              <Menu.Item leftSection={<Shield size={14} />} onClick={unblockUser}>
-                Unblock {otherUser?.displayName || 'user'}
-              </Menu.Item>
-            ) : (
-              <Menu.Item color="red" leftSection={<ShieldOff size={14} />} onClick={blockUser}>
-                Block {otherUser?.displayName || 'user'}
-              </Menu.Item>
+
+        {chatType === 'group' ? (
+          <>
+            <Avatar size={36} radius="xl" src={groupData?.avatarURL || null} style={{ flexShrink: 0, background: 'var(--mantine-color-indigo-6)' }}>
+              <Users size={18} color="white" />
+            </Avatar>
+            <Box style={{ flex: 1, minWidth: 0 }}>
+              <Text fw={600} size="sm" truncate>{groupData?.name || 'Group Chat'}</Text>
+              <Text size="xs" c="dimmed">{chatData?.participants?.length || 0} members</Text>
+            </Box>
+            {groupData && (
+              <ActionIcon variant="subtle" color="gray" onClick={() => navigate(`/groups/${chatData.groupId}`)}>
+                <ExternalLink size={14} />
+              </ActionIcon>
             )}
-          </Menu.Dropdown>
-        </Menu>
+          </>
+        ) : (
+          <>
+            <Avatar
+              src={otherUser?.profilePic?.currentUrl || null} size={36} radius="xl"
+              style={{ cursor: 'pointer', flexShrink: 0 }}
+              onClick={() => effectiveOtherUID && navigate(`/profile/${effectiveOtherUID}`)}
+            />
+            <Box style={{ flex: 1, minWidth: 0 }}>
+              <Text fw={600} size="sm" truncate>{otherUser?.displayName || '…'}</Text>
+              {otherUser?.username && <Text size="xs" c="dimmed" truncate>@{otherUser.username}</Text>}
+            </Box>
+            <Menu shadow="md" position="bottom-end">
+              <Menu.Target>
+                <ActionIcon variant="subtle" color="gray" loading={actionLoading}>
+                  <MoreVertical size={16} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {isBlockedByMe ? (
+                  <Menu.Item leftSection={<Shield size={14} />} onClick={unblockUser}>
+                    Unblock {otherUser?.displayName || 'user'}
+                  </Menu.Item>
+                ) : (
+                  <Menu.Item color="red" leftSection={<ShieldOff size={14} />} onClick={blockUser}>
+                    Block {otherUser?.displayName || 'user'}
+                  </Menu.Item>
+                )}
+              </Menu.Dropdown>
+            </Menu>
+          </>
+        )}
       </Box>
 
-      {/* ── Status banners ── */}
+      {/* ── Inquiry listing banner ── */}
+      {chatType === 'inquiry' && (
+        <Box style={bannerStyle}>
+          <Group gap="xs">
+            <Tag size={12} style={{ opacity: 0.6, flexShrink: 0 }} />
+            <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>Re:</Text>
+            <Text
+              size="xs" fw={500} truncate
+              style={{ cursor: listingData ? 'pointer' : 'default', flex: 1, minWidth: 0 }}
+              onClick={() => listingData && navigate(`/listing/${listingData.id}`)}
+            >
+              {listingData ? listingData.title : chatData?.listingId ? 'Loading…' : 'Inquiry'}
+            </Text>
+          </Group>
+        </Box>
+      )}
+
+      {/* ── Status banners (DM only) ── */}
       {isPendingRequest && (
-        <Box style={{ flexShrink: 0, padding: '10px 16px', borderBottom: '1px solid var(--mantine-color-default-border)', background: 'var(--mantine-color-default-hover)' }}>
+        <Box style={{ ...bannerStyle }}>
           <Group justify="space-between" wrap="nowrap">
             <Box style={{ minWidth: 0 }}>
               <Text size="sm" fw={500}>{otherUser?.displayName || 'Someone'} wants to start a conversation</Text>
@@ -375,12 +468,12 @@ export default function ChatView({ otherUID, showBackButton = false }) {
         </Box>
       )}
       {isWaitingReply && (
-        <Box style={{ flexShrink: 0, padding: '8px 16px', borderBottom: '1px solid var(--mantine-color-default-border)', background: 'var(--mantine-color-default-hover)' }}>
+        <Box style={bannerStyle}>
           <Group gap="xs"><Clock size={13} style={{ opacity: 0.5 }} /><Text size="xs" c="dimmed">Your message request is waiting for acceptance.</Text></Group>
         </Box>
       )}
       {isBlocked && (
-        <Box style={{ flexShrink: 0, padding: '8px 16px', borderBottom: '1px solid var(--mantine-color-default-border)', background: 'var(--mantine-color-default-hover)' }}>
+        <Box style={bannerStyle}>
           <Group gap="xs" justify="space-between">
             <Group gap="xs">
               <ShieldOff size={13} style={{ opacity: 0.5 }} />
@@ -391,7 +484,7 @@ export default function ChatView({ otherUID, showBackButton = false }) {
         </Box>
       )}
       {isDeclined && (
-        <Box style={{ flexShrink: 0, padding: '8px 16px', borderBottom: '1px solid var(--mantine-color-default-border)', background: 'var(--mantine-color-default-hover)' }}>
+        <Box style={bannerStyle}>
           <Group gap="xs"><X size={13} style={{ opacity: 0.5 }} /><Text size="xs" c="dimmed">This message request was declined.</Text></Group>
         </Box>
       )}
@@ -409,7 +502,13 @@ export default function ChatView({ otherUID, showBackButton = false }) {
             items.map(item =>
               item._divider
                 ? <DateDivider key={item.key} label={item.label} />
-                : <MessageBubble key={item.id} msg={item} isOwn={item.senderId === currentUser.uid} />
+                : <MessageBubble
+                    key={item.id}
+                    msg={item}
+                    isOwn={item.senderId === currentUser.uid}
+                    senderName={senderNames[item.senderId] || ''}
+                    showSender={chatType === 'group'}
+                  />
             )
           )}
         </Stack>

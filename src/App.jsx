@@ -19,6 +19,10 @@ import NotificationsPage from './pages/NotificationsPage.jsx';
 import ChatPage from './pages/ChatPage.jsx';
 import InboxPage from './pages/InboxPage.jsx';
 import AliasRedirectPage from './pages/AliasRedirectPage.jsx';
+import GroupsPage from './pages/GroupsPage.jsx';
+import GroupPage from './pages/GroupPage.jsx';
+import GroupManagePage from './pages/GroupManagePage.jsx';
+import CreateGroupPage from './pages/CreateGroupPage.jsx';
 
 import { LinkImage } from './components/LinkElements';
 import PageTransition from './components/PageTransition';
@@ -91,7 +95,7 @@ function App() {
             <Anchor component={Link} to="/home" fw={500} underline="never" c="inherit" size="sm" className="nav-link">Dashboard</Anchor>
             <Anchor component={Link} to="/explore" fw={500} underline="never" c="inherit" size="sm" className="nav-link">Explore</Anchor>
             <Anchor component={Link} to="/inbox" fw={500} underline="never" c="inherit" size="sm" className="nav-link">Inbox</Anchor>
-            <Anchor component={Link} to="/explore" fw={500} underline="never" c="inherit" size="sm" className="nav-link">Opportunities</Anchor>
+            <Anchor component={Link} to="/groups" fw={500} underline="never" c="inherit" size="sm" className="nav-link">Groups</Anchor>
           </Group>
 
           <Group gap={4} align="center">
@@ -175,7 +179,7 @@ function App() {
                   { to: '/home',    label: 'Dashboard' },
                   { to: '/explore', label: 'Explore' },
                   { to: '/inbox',   label: 'Inbox' },
-                  { to: '/explore', label: 'Opportunities' },
+                  { to: '/groups',  label: 'Groups' },
                 ].map(({ to, label }) => (
                   <Anchor
                     key={label}
@@ -228,7 +232,11 @@ function App() {
                 <Route path="/manage/:listingId" element={<ManagePage />} />
                 <Route path="/chat/:otherUID" element={user ? <ChatPage /> : <Navigate to="/signon" />} />
                 <Route path="/inbox" element={user ? <InboxPage /> : <Navigate to="/signon" />} />
-                <Route path="/inbox/:otherUID" element={user ? <InboxPage /> : <Navigate to="/signon" />} />
+                <Route path="/inbox/:chatId" element={user ? <InboxPage /> : <Navigate to="/signon" />} />
+                <Route path="/groups" element={user ? <GroupsPage /> : <Navigate to="/signon" />} />
+                <Route path="/groups/create" element={user ? <CreateGroupPage /> : <Navigate to="/signon" />} />
+                <Route path="/groups/:groupId" element={user ? <GroupPage /> : <Navigate to="/signon" />} />
+                <Route path="/groups/:groupId/manage" element={user ? <GroupManagePage /> : <Navigate to="/signon" />} />
                 <Route
                   path="/profile"
                   element={user ? <Navigate to={"/profile/" + user.uid} /> : <Navigate to="/signon" />}

@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Title, Text, Stack, Group, Paper, Avatar, Badge, Box, Loader, Divider, ActionIcon, Tooltip,
+  useComputedColorScheme,
 } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { LinkButton } from '../components/LinkElements.jsx';
@@ -11,7 +12,7 @@ import {
   collection, query, where, orderBy, limit, onSnapshot, doc, getDoc,
   updateDoc, arrayUnion,
 } from 'firebase/firestore';
-import { MessageSquare, Edit, Plus, X } from 'lucide-react';
+import { MessageSquare, Edit, Plus, X, Tag, Users } from 'lucide-react';
 
 const listingsCollection = collection(db, 'listings');
 
@@ -24,11 +25,14 @@ function timeAgo(ts) {
   return `${Math.floor(diff / 86400)}d`;
 }
 
-function ChatRow({ chat, currentUserId, onHide }) {
+// ── DM row ──────────────────────────────────────────────────────────
+function DmChatRow({ chat, currentUserId, onHide }) {
   const navigate = useNavigate();
   const otherUID = chat.participants?.find(p => p !== currentUserId);
   const [otherUser, setOtherUser] = React.useState(null);
   const [hovered, setHovered]     = React.useState(false);
+  const isDark = useComputedColorScheme('light') === 'dark';
+
   const unread           = chat.unread?.[currentUserId] || 0;
   const isPendingRequest = chat.status === 'pending' && chat.initiatedBy !== currentUserId;
   const isWaiting        = chat.status === 'pending' && chat.initiatedBy === currentUserId;
@@ -41,15 +45,17 @@ function ChatRow({ chat, currentUserId, onHide }) {
       .catch(() => {});
   }, [otherUID]);
 
+  const hoverBg = isDark ? 'rgba(255,255,255,0.04)' : 'var(--mantine-color-gray-0)';
+
   return (
     <Group
       gap="sm" px="sm" py="xs"
-      style={{ cursor: 'pointer', borderRadius: 8, transition: 'background 0.12s ease' }}
-      onMouseEnter={e => { e.currentTarget.style.background = 'var(--mantine-color-default-hover)'; setHovered(true); }}
-      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; setHovered(false); }}
-      onClick={() => navigate(`/inbox/${otherUID}`)}
+      style={{ cursor: 'pointer', borderRadius: 8, transition: 'background 0.12s ease', background: hovered ? hoverBg : 'transparent' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => navigate(`/inbox/${chat.id}`)}
     >
-      <Avatar src={otherUser?.profilePic?.currentUrl || null} size={36} radius="xl" />
+      <Avatar src={otherUser?.profilePic?.currentUrl || null} size={36} radius="xl" style={{ flexShrink: 0 }} />
       <Box style={{ flex: 1, minWidth: 0 }}>
         <Text size="sm" fw={unread > 0 ? 700 : 400} truncate>{otherUser?.displayName || '…'}</Text>
         <Text size="xs" c="dimmed" truncate>{chat.lastMessage || 'No messages yet'}</Text>
@@ -57,11 +63,9 @@ function ChatRow({ chat, currentUserId, onHide }) {
       <Stack gap={2} align="flex-end" style={{ flexShrink: 0 }}>
         {chat.lastAt && !hovered && <Text size="xs" c="dimmed">{timeAgo(chat.lastAt)}</Text>}
         {hovered ? (
-          <Tooltip label="Hide conversation" openDelay={400}>
-            <ActionIcon
-              size="xs" variant="subtle" color="gray"
-              onClick={e => { e.stopPropagation(); onHide(); }}
-            >
+          <Tooltip label="Hide" openDelay={400}>
+            <ActionIcon size="xs" variant="subtle" color="gray"
+              onClick={e => { e.stopPropagation(); onHide(); }}>
               <X size={12} />
             </ActionIcon>
           </Tooltip>
@@ -80,6 +84,127 @@ function ChatRow({ chat, currentUserId, onHide }) {
   );
 }
 
+// ── Inquiry row ──────────────────────────────────────────────────────
+function InquiryChatRow({ chat, currentUserId, onHide }) {
+  const navigate = useNavigate();
+  const otherUID = chat.participants?.find(p => p !== currentUserId);
+  const [otherUser, setOtherUser]       = React.useState(null);
+  const [listingTitle, setListingTitle] = React.useState(null);
+  const [hovered, setHovered]           = React.useState(false);
+  const isDark = useComputedColorScheme('light') === 'dark';
+
+  const unread = chat.unread?.[currentUserId] || 0;
+
+  React.useEffect(() => {
+    if (!otherUID) return;
+    getDoc(doc(db, 'users', otherUID)).then(s => { if (s.exists()) setOtherUser(s.data()); }).catch(() => {});
+  }, [otherUID]);
+
+  React.useEffect(() => {
+    if (!chat.listingId) return;
+    getDoc(doc(db, 'listings', chat.listingId))
+      .then(s => { if (s.exists()) setListingTitle(s.data().title || null); })
+      .catch(() => {});
+  }, [chat.listingId]);
+
+  const hoverBg = isDark ? 'rgba(255,255,255,0.04)' : 'var(--mantine-color-gray-0)';
+
+  return (
+    <Group
+      gap="sm" px="sm" py="xs"
+      style={{ cursor: 'pointer', borderRadius: 8, transition: 'background 0.12s ease', background: hovered ? hoverBg : 'transparent' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => navigate(`/inbox/${chat.id}`)}
+    >
+      <Avatar src={otherUser?.profilePic?.currentUrl || null} size={36} radius="xl" style={{ flexShrink: 0 }} />
+      <Box style={{ flex: 1, minWidth: 0 }}>
+        <Group gap={4} wrap="nowrap" align="center">
+          <Text size="sm" fw={unread > 0 ? 700 : 400} truncate style={{ minWidth: 0 }}>
+            {otherUser?.displayName || '…'}
+          </Text>
+          <Badge size="xs" color="violet" variant="light" leftSection={<Tag size={9} />} style={{ flexShrink: 0 }}>
+            Inquiry
+          </Badge>
+        </Group>
+        <Text size="xs" c="dimmed" truncate>
+          {listingTitle ? `Re: ${listingTitle}` : chat.lastMessage || 'No messages yet'}
+        </Text>
+      </Box>
+      <Stack gap={2} align="flex-end" style={{ flexShrink: 0 }}>
+        {chat.lastAt && !hovered && <Text size="xs" c="dimmed">{timeAgo(chat.lastAt)}</Text>}
+        {hovered ? (
+          <Tooltip label="Hide" openDelay={400}>
+            <ActionIcon size="xs" variant="subtle" color="gray"
+              onClick={e => { e.stopPropagation(); onHide(); }}>
+              <X size={12} />
+            </ActionIcon>
+          </Tooltip>
+        ) : (
+          unread > 0 && <Badge size="xs" color="red" circle>{unread > 9 ? '9+' : unread}</Badge>
+        )}
+      </Stack>
+    </Group>
+  );
+}
+
+// ── Group row ────────────────────────────────────────────────────────
+function GroupChatRow({ chat, currentUserId }) {
+  const navigate = useNavigate();
+  const [groupData, setGroupData] = React.useState(null);
+  const [hovered, setHovered]     = React.useState(false);
+  const isDark = useComputedColorScheme('light') === 'dark';
+
+  const unread = chat.unread?.[currentUserId] || 0;
+
+  React.useEffect(() => {
+    if (!chat.groupId) return;
+    getDoc(doc(db, 'groups', chat.groupId)).then(s => { if (s.exists()) setGroupData({ id: s.id, ...s.data() }); }).catch(() => {});
+  }, [chat.groupId]);
+
+  const hoverBg = isDark ? 'rgba(255,255,255,0.04)' : 'var(--mantine-color-gray-0)';
+
+  return (
+    <Group
+      gap="sm" px="sm" py="xs"
+      style={{ cursor: 'pointer', borderRadius: 8, transition: 'background 0.12s ease', background: hovered ? hoverBg : 'transparent' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => navigate(`/inbox/${chat.id}`)}
+    >
+      <Avatar
+        src={groupData?.avatarURL || null} size={36} radius="md"
+        style={{ background: 'var(--mantine-color-indigo-6)', flexShrink: 0 }}
+      >
+        <Users size={18} color="white" />
+      </Avatar>
+      <Box style={{ flex: 1, minWidth: 0 }}>
+        <Group gap={4} wrap="nowrap" align="center">
+          <Text size="sm" fw={unread > 0 ? 700 : 400} truncate style={{ minWidth: 0 }}>
+            {groupData?.name || 'Group'}
+          </Text>
+          <Badge size="xs" color="indigo" variant="light" leftSection={<Users size={9} />} style={{ flexShrink: 0 }}>
+            Group
+          </Badge>
+        </Group>
+        <Text size="xs" c="dimmed" truncate>{chat.lastMessage || 'No messages yet'}</Text>
+      </Box>
+      <Stack gap={2} align="flex-end" style={{ flexShrink: 0 }}>
+        {chat.lastAt && <Text size="xs" c="dimmed">{timeAgo(chat.lastAt)}</Text>}
+        {unread > 0 && <Badge size="xs" color="red" circle>{unread > 9 ? '9+' : unread}</Badge>}
+      </Stack>
+    </Group>
+  );
+}
+
+// ── Dispatch to correct row type ─────────────────────────────────────
+function ChatRow({ chat, currentUserId, onHide }) {
+  const type = chat.type || 'dm';
+  if (type === 'inquiry') return <InquiryChatRow chat={chat} currentUserId={currentUserId} onHide={onHide} />;
+  if (type === 'group')   return <GroupChatRow   chat={chat} currentUserId={currentUserId} />;
+  return <DmChatRow chat={chat} currentUserId={currentUserId} onHide={onHide} />;
+}
+
 function ChatsContent({ chats, loading, userId, hideChat }) {
   if (loading) {
     return (
@@ -88,7 +213,9 @@ function ChatsContent({ chats, loading, userId, hideChat }) {
       </Box>
     );
   }
+
   const visibleChats = chats.filter(c => !(c.hiddenBy ?? []).includes(userId));
+
   if (visibleChats.length === 0) {
     return (
       <Box p="md">
@@ -99,11 +226,21 @@ function ChatsContent({ chats, loading, userId, hideChat }) {
       </Box>
     );
   }
+
   return (
     <Stack gap={0} p="xs">
-      {visibleChats.slice(0, 5).map(chat => (
+      {visibleChats.slice(0, 6).map(chat => (
         <ChatRow key={chat.id} chat={chat} currentUserId={userId} onHide={() => hideChat(chat.id)} />
       ))}
+      {visibleChats.length > 6 && (
+        <Text
+          size="xs" c="dimmed" ta="center" py="xs"
+          style={{ cursor: 'pointer' }}
+          onClick={() => {}}
+        >
+          {/* rendered by ChatsOverview with navigate — passed as prop */}
+        </Text>
+      )}
     </Stack>
   );
 }
@@ -119,7 +256,7 @@ function ChatsOverview({ userId }) {
       collection(db, 'chats'),
       where('participants', 'array-contains', userId),
       orderBy('lastAt', 'desc'),
-      limit(10)
+      limit(12)
     );
     const unsub = onSnapshot(q, snap => {
       setChats(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -139,13 +276,15 @@ function ChatsOverview({ userId }) {
     }
   }
 
+  const visibleChats = chats.filter(c => !(c.hiddenBy ?? []).includes(userId));
+  const hasMore = visibleChats.length > 6;
+
   return (
     <>
       <Paper withBorder radius="md" w="100%" maw={700}>
         <Group px="md" py="sm" style={{ borderBottom: '1px solid var(--mantine-color-default-border)' }}>
           <MessageSquare size={16} />
-          <Text fw={600} size="sm">Messages</Text>
-          <Box style={{ flex: 1 }} />
+          <Text fw={600} size="sm" style={{ flex: 1 }}>Chats</Text>
           <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => navigate('/inbox')} aria-label="Open inbox">
             <MessageSquare size={13} />
           </ActionIcon>
@@ -155,6 +294,18 @@ function ChatsOverview({ userId }) {
         </Group>
 
         <ChatsContent chats={chats} loading={loading} userId={userId} hideChat={hideChat} />
+
+        {!loading && hasMore && (
+          <Box
+            px="md" py="xs"
+            style={{ borderTop: '1px solid var(--mantine-color-default-border)', cursor: 'pointer' }}
+            onClick={() => navigate('/inbox')}
+          >
+            <Text size="xs" c="dimmed" ta="center">
+              View all in Inbox →
+            </Text>
+          </Box>
+        )}
       </Paper>
 
       <NewChatModal opened={newChatOpen} onClose={() => setNewChatOpen(false)} currentUserId={userId} />

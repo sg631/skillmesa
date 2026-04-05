@@ -1,14 +1,14 @@
 import React from 'react';
 import {
   Text, Textarea, Select, Button, Stack, Image, Paper,
-  TagsInput, Box, Grid, ActionIcon, Divider, Group, TextInput, Loader,
+  TagsInput, Box, Grid, ActionIcon, Divider, Group, TextInput, Loader, Badge,
 } from '@mantine/core';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db, storage } from "../firebase";
-import { collection, addDoc, updateDoc, doc } from "firebase/firestore";
+import { collection, addDoc, updateDoc, doc, getDoc, getDocs, arrayUnion } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Upload, Users } from 'lucide-react';
 import showAlert from '../components/ShowAlert';
 
 const CATEGORIES = [
@@ -30,11 +30,19 @@ const CATEGORIES = [
 
 function CreateListingPage() {
   const navigate = useNavigate();
-  const [user, setUser]             = React.useState(null);
+  const [searchParams] = useSearchParams();
+  const preselectedGroupId = searchParams.get('group');
+
+  const [user, setUser]               = React.useState(null);
   const [checkedAuth, setCheckedAuth] = React.useState(false);
-  const [previewUrl, setPreviewUrl] = React.useState(null);
+  const [previewUrl, setPreviewUrl]   = React.useState(null);
   const [selectedImage, setSelectedImage] = React.useState(null);
   const [isSubmitting, setIsSubmitting]   = React.useState(false);
+
+  // Group ownership
+  const [userGroups, setUserGroups]     = React.useState([]); // { id, name }
+  const [groupsLoading, setGroupsLoading] = React.useState(false);
+  const [ownerGroupId, setOwnerGroupId] = React.useState(preselectedGroupId || null);
 
   // Form fields
   const [title, setTitle]             = React.useState("");
@@ -47,7 +55,25 @@ function CreateListingPage() {
   const [zipCode, setZipCode]         = React.useState("");
 
   React.useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => { setUser(u); setCheckedAuth(true); });
+    const unsub = onAuthStateChanged(auth, async (u) => {
+      setUser(u);
+      setCheckedAuth(true);
+      if (u) {
+        setGroupsLoading(true);
+        try {
+          const userSnap = await getDoc(doc(db, 'users', u.uid));
+          const groupIds = userSnap.exists() ? (userSnap.data().groupIds || []) : [];
+          if (groupIds.length > 0) {
+            const snaps = await Promise.all(groupIds.map(id => getDoc(doc(db, 'groups', id))));
+            setUserGroups(snaps.filter(s => s.exists()).map(s => ({ id: s.id, ...s.data() })));
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          setGroupsLoading(false);
+        }
+      }
+    });
     return () => unsub();
   }, []);
 
@@ -72,7 +98,16 @@ function CreateListingPage() {
     try {
       const tagsArray = tags.map(t => t.trim()).filter(t => t.length > 0);
 
-      const newRef = await addDoc(collection(db, "listings"), {
+      // If group-owned, load all member UIDs for editors[]
+      let editorUIDs = [];
+      if (ownerGroupId) {
+        const membersSnap = await getDocs(collection(db, 'groups', ownerGroupId, 'members'));
+        editorUIDs = membersSnap.docs
+          .map(d => d.id)
+          .filter(uid => uid !== user.uid);
+      }
+
+      const listingPayload = {
         title:       title.trim(),
         description: description.trim(),
         owner:       user.uid,
@@ -81,18 +116,29 @@ function CreateListingPage() {
         category,
         type,
         online:      online === "online",
-        editors:     [],
+        editors:     editorUIDs,
         thumbnailURL: "",
         createdAt:   new Date().toISOString(),
         price:       Number(parseFloat(String(price).replace(/[^0-9.]/g, '')).toFixed(2)),
         zipCode,
-      });
+        ...(ownerGroupId ? { ownerType: 'group', ownerGroupId } : {}),
+      };
 
+      const newRef = await addDoc(collection(db, "listings"), listingPayload);
+
+      // Upload thumbnail
       const ext      = selectedImage.name.split(".").pop();
       const imageRef = ref(storage, `listings/${newRef.id}/thumbnail.${ext}`);
       await uploadBytes(imageRef, selectedImage);
       const imageURL = await getDownloadURL(imageRef);
       await updateDoc(doc(db, "listings", newRef.id), { thumbnailURL: imageURL });
+
+      // If group-owned, register listing in the group doc
+      if (ownerGroupId) {
+        await updateDoc(doc(db, 'groups', ownerGroupId), {
+          listingIds: arrayUnion(newRef.id),
+        });
+      }
 
       showAlert("Listing created successfully!");
       navigate("/home");
@@ -122,6 +168,13 @@ function CreateListingPage() {
     fontSize: 12, fontWeight: 600,
     textTransform: 'capitalize', letterSpacing: '0.01em',
   };
+
+  const selectedGroup = userGroups.find(g => g.id === ownerGroupId);
+
+  const groupSelectData = [
+    { value: '', label: 'Myself' },
+    ...userGroups.map(g => ({ value: g.id, label: g.name })),
+  ];
 
   return (
     <Stack gap={0} py="xl" px={{ base: 'md', sm: 'xl' }} maw={1200} mx="auto" className="page-enter">
@@ -249,6 +302,25 @@ function CreateListingPage() {
               splitChars={[',']}
               required
             />
+
+            {/* Group ownership */}
+            {userGroups.length > 0 && (
+              <Stack gap="xs">
+                <Select
+                  label="Listed by"
+                  description="List this under a group so all members can co-manage it."
+                  value={ownerGroupId || ''}
+                  onChange={val => setOwnerGroupId(val || null)}
+                  data={groupSelectData}
+                  leftSection={ownerGroupId ? <Users size={14} /> : null}
+                />
+                {selectedGroup && (
+                  <Text size="xs" c="dimmed">
+                    All members of <strong>{selectedGroup.name}</strong> will be added as editors.
+                  </Text>
+                )}
+              </Stack>
+            )}
           </Stack>
         </Grid.Col>
 
@@ -262,6 +334,11 @@ function CreateListingPage() {
                 <Box className={modalClass} style={bannerBase}>
                   {online === "online" ? "Online" : "In-Person"}
                 </Box>
+                {selectedGroup && (
+                  <Badge variant="light" color="indigo" size="sm" leftSection={<Users size={11} />}>
+                    {selectedGroup.name}
+                  </Badge>
+                )}
               </Group>
 
               {/* Title — large editable */}

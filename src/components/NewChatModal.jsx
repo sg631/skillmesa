@@ -70,7 +70,7 @@ export default function NewChatModal({ opened, onClose, currentUserId }) {
         await updateDoc(chatRef, { hiddenBy: arrayRemove(currentUserId) });
       }
       onClose();
-      navigate(`/inbox/${targetUID}`);
+      navigate(`/inbox/${chatId}`);
     } catch (err) {
       console.error('Failed to start chat:', err);
     } finally {

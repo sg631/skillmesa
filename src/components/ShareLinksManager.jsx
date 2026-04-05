@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Stack, Group, Text, TextInput, Button, Paper, Badge, Box,
-  ActionIcon, Divider, Loader, Tooltip, Progress,
+  ActionIcon, Divider, Loader, Tooltip, Progress, Modal,
 } from '@mantine/core';
 import { Link2, Copy, Trash2, Check, X, ExternalLink } from 'lucide-react';
 import {
@@ -94,7 +94,7 @@ function AliasCard({ link, onDelete, onCopy }) {
             </ActionIcon>
           </Tooltip>
           <Tooltip label="Delete alias">
-            <ActionIcon variant="subtle" color="red" size="sm" onClick={() => onDelete(link.alias)}>
+            <ActionIcon variant="subtle" color="red" size="sm" onClick={() => onDelete(link.alias)} aria-label="Delete alias">
               <Trash2 size={13} />
             </ActionIcon>
           </Tooltip>
@@ -119,6 +119,7 @@ export default function ShareLinksManager({ listingId, currentUserId }) {
   const [alias, setAlias]         = useState('');
   const [availability, setAvail]  = useState(null); // null | 'checking' | 'available' | 'taken' | 'invalid'
   const [creating, setCreating]   = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null); // alias string to confirm delete
 
   // Live list of aliases for this listing
   useEffect(() => {
@@ -175,12 +176,14 @@ export default function ShareLinksManager({ listingId, currentUserId }) {
     }
   }
 
-  async function deleteAlias(aliasKey) {
-    if (!window.confirm(`Delete alias "${aliasKey}"? This cannot be undone.`)) return;
+  async function confirmDeleteAlias() {
+    if (!deleteTarget) return;
     try {
-      await deleteDoc(doc(db, 'shareLinks', aliasKey));
+      await deleteDoc(doc(db, 'shareLinks', deleteTarget));
     } catch (err) {
       console.error('Failed to delete alias:', err);
+    } finally {
+      setDeleteTarget(null);
     }
   }
 
@@ -260,11 +263,30 @@ export default function ShareLinksManager({ listingId, currentUserId }) {
             <AliasCard
               key={link.alias}
               link={link}
-              onDelete={deleteAlias}
+              onDelete={setDeleteTarget}
             />
           ))}
         </Stack>
       )}
+
+      {/* Delete confirmation modal */}
+      <Modal
+        opened={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete alias"
+        size="xs"
+        centered
+      >
+        <Stack gap="md">
+          <Text size="sm">
+            Delete <Text span fw={600} style={{ fontFamily: 'monospace' }}>/s/{deleteTarget}</Text>? This cannot be undone.
+          </Text>
+          <Group justify="flex-end" gap="xs">
+            <Button variant="default" size="xs" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button color="red" size="xs" onClick={confirmDeleteAlias}>Delete</Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }

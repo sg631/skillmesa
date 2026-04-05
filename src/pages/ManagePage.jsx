@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
-import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, limit, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "../firebase";
 import { LinkButton } from "../components/LinkElements";
@@ -10,9 +10,9 @@ import ShareLinksManager from "../components/ShareLinksManager";
 import {
   Title, Text, TextInput, Textarea, Button, Group, Stack, Avatar,
   Badge, Divider, Paper, Code, ScrollArea, Image, Box, Grid,
-  ActionIcon, Loader, TagsInput,
+  ActionIcon, Loader, TagsInput, Modal,
 } from "@mantine/core";
-import { ArrowLeft, Share2, Save, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Share2, Save, Trash2, Upload, Archive, ArchiveRestore, UserPlus, X, Search } from "lucide-react";
 
 const CATEGORIES = [
   { value: "coding",       label: "Coding and Development" },
@@ -31,6 +31,26 @@ const CATEGORIES = [
   { value: "other",        label: "Other" },
 ];
 
+// Search + display user for collaborator list
+function CollaboratorRow({ uid, onRemove }) {
+  const [userData, setUserData] = useState(null);
+  useEffect(() => {
+    getDoc(doc(db, 'users', uid)).then(s => { if (s.exists()) setUserData(s.data()); }).catch(() => {});
+  }, [uid]);
+  return (
+    <Group gap="sm" wrap="nowrap">
+      <Avatar src={userData?.profilePic?.currentUrl || null} size={32} radius="xl" style={{ flexShrink: 0 }} />
+      <Box style={{ flex: 1, minWidth: 0 }}>
+        <Text size="sm" fw={500} truncate>{userData?.displayName || '…'}</Text>
+        {userData?.username && <Text size="xs" c="dimmed">@{userData.username}</Text>}
+      </Box>
+      <ActionIcon variant="subtle" color="red" size="sm" onClick={() => onRemove(uid)}>
+        <X size={13} />
+      </ActionIcon>
+    </Group>
+  );
+}
+
 function ManagePage() {
   const { listingId } = useParams();
   const navigate = useNavigate();
@@ -48,10 +68,25 @@ function ManagePage() {
   const [zipCode, setZipCode]         = useState("");
   const [richContent, setRichContent] = useState("");
 
+  // Editors / collaborators
+  const [editors, setEditors]         = useState([]);
+  const [editorSearch, setEditorSearch] = useState("");
+  const [editorResults, setEditorResults] = useState([]);
+  const [editorSearching, setEditorSearching] = useState(false);
+  const [addingEditor, setAddingEditor] = useState(null);
+
   // Thumbnail
   const [newThumbnail, setNewThumbnail]         = useState(null);
   const [thumbnailPreview, setThumbnailPreview] = useState(null);
   const thumbInputRef = useRef(null);
+
+  // Archive
+  const [archived, setArchived]         = useState(false);
+  const [archiveLoading, setArchiveLoading] = useState(false);
+
+  // Delete modal
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting]     = useState(false);
 
   const user = auth.currentUser;
 
@@ -74,6 +109,8 @@ function ManagePage() {
           setPrice(listing.price != null ? String(listing.price) : "");
           setZipCode(listing.zipCode || "");
           setRichContent(listing.richContent || "");
+          setEditors(listing.editors || []);
+          setArchived(listing.archived || false);
         }
 
         if (listing.owner) {
@@ -91,6 +128,38 @@ function ManagePage() {
     fetchListing();
     return () => { isMounted = false; };
   }, [listingId]);
+
+  // Editor search debounce
+  useEffect(() => {
+    if (!editorSearch.trim()) { setEditorResults([]); return; }
+    setEditorSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const term = editorSearch.trim();
+        const existingSet = new Set([listingData?.owner, ...editors]);
+        const [snap1, snap2] = await Promise.all([
+          getDocs(query(collection(db, 'users'), where('displayName', '>=', term), where('displayName', '<=', term + '\uf8ff'), limit(6))),
+          getDocs(query(collection(db, 'users'), where('username', '>=', term.toLowerCase()), where('username', '<=', term.toLowerCase() + '\uf8ff'), limit(6))),
+        ]);
+        const seen = new Set();
+        const users = [];
+        for (const snap of [snap1, snap2]) {
+          for (const d of snap.docs) {
+            if (!seen.has(d.id) && !existingSet.has(d.id)) {
+              seen.add(d.id);
+              users.push({ uid: d.id, ...d.data() });
+            }
+          }
+        }
+        setEditorResults(users.slice(0, 6));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setEditorSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [editorSearch, editors, listingData?.owner]);
 
   function handleThumbnailSelect(file) {
     if (!file) return;
@@ -110,7 +179,6 @@ function ManagePage() {
         zipCode,
       };
 
-      // Upload new thumbnail if selected
       if (newThumbnail) {
         const ext = newThumbnail.name.split('.').pop();
         const storageRef = ref(storage, `listings/${listingId}/thumbnail.${ext}`);
@@ -130,16 +198,65 @@ function ManagePage() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to delete this listing? This cannot be undone.")) return;
+    setDeleting(true);
     try {
       await deleteDoc(doc(db, "listings", listingId));
-      showAlert("Listing deleted.");
       navigate("/home");
     } catch (err) {
       console.error("Failed to delete:", err);
       showAlert("Failed to delete listing.");
+      setDeleting(false);
+      setDeleteOpen(false);
     }
   };
+
+  async function toggleArchive() {
+    setArchiveLoading(true);
+    try {
+      const next = !archived;
+      await updateDoc(doc(db, "listings", listingId), { archived: next });
+      setArchived(next);
+    } catch (err) {
+      console.error(err);
+      showAlert("Failed to update archive status.");
+    } finally {
+      setArchiveLoading(false);
+    }
+  }
+
+  async function addEditor(targetUser) {
+    setAddingEditor(targetUser.uid);
+    try {
+      await updateDoc(doc(db, "listings", listingId), { editors: arrayUnion(targetUser.uid) });
+      setEditors(prev => [...prev, targetUser.uid]);
+      setEditorSearch('');
+      setEditorResults([]);
+      // Notify the new collaborator
+      const currentUserName = user ? (await getDoc(doc(db, 'users', user.uid))).data()?.displayName || 'Someone' : 'Someone';
+      await addDoc(collection(db, 'notifications', targetUser.uid, 'items'), {
+        type: 'collab_invite',
+        message: `${currentUserName} added you as a collaborator on "${title}"`,
+        read: false,
+        createdAt: serverTimestamp(),
+        link: `/manage/${listingId}`,
+      });
+    } catch (err) {
+      console.error(err);
+      showAlert("Failed to add collaborator.");
+    } finally {
+      setAddingEditor(null);
+    }
+  }
+
+  async function removeEditor(uid) {
+    try {
+      await updateDoc(doc(db, "listings", listingId), { editors: arrayRemove(uid) });
+      setEditors(prev => prev.filter(e => e !== uid));
+    } catch (err) {
+      console.error(err);
+      showAlert("Failed to remove collaborator.");
+    }
+  }
 
   async function copyShareLink() {
     const url = `https://skill-mesa.web.app/share/${listingId}`;
@@ -155,7 +272,10 @@ function ManagePage() {
     );
   }
   if (!listingData) return <Text ta="center" py="xl" c="dimmed">Listing not found.</Text>;
-  if (!user || listingData.owner !== user.uid) return <Navigate to={`/listing/${listingId}`} />;
+
+  const isOwner  = Boolean(user && listingData.owner === user.uid);
+  const isEditor = Boolean(user && (listingData.editors || []).includes(user.uid));
+  if (!isOwner && !isEditor) return <Navigate to={`/listing/${listingId}`} />;
 
   const ownerName     = ownerData?.displayName || "Unknown User";
   const profilePicUrl = ownerData?.profilePic?.currentUrl || null;
@@ -186,6 +306,8 @@ function ManagePage() {
         <Text size="sm" c="dimmed" style={{ cursor: 'pointer' }} onClick={() => navigate(-1)}>
           Back
         </Text>
+        {archived && <Badge color="orange" variant="light" size="sm">Archived</Badge>}
+        {!isOwner && isEditor && <Badge color="blue" variant="light" size="sm">Editor</Badge>}
       </Group>
 
       <Grid gutter="xl" align="flex-start">
@@ -307,6 +429,61 @@ function ManagePage() {
               <Text size="xs" c="dimmed">Rich text shown on the listing page — add details, schedules, requirements, etc.</Text>
               <TextEditor initialState={richContent} onChange={setRichContent} />
             </Stack>
+
+            {/* ── Collaborators section (owner only) ── */}
+            {isOwner && (
+              <Paper withBorder p="lg" radius="md">
+                <Stack gap="md">
+                  <Box>
+                    <Text fw={600} size="sm">Collaborators</Text>
+                    <Text size="xs" c="dimmed">Editors can edit this listing's content but cannot delete it or manage collaborators.</Text>
+                  </Box>
+
+                  {editors.length > 0 && (
+                    <Stack gap="sm">
+                      {editors.map(uid => (
+                        <CollaboratorRow key={uid} uid={uid} onRemove={removeEditor} />
+                      ))}
+                    </Stack>
+                  )}
+
+                  <Box>
+                    <Text size="xs" fw={500} mb={6}>Add collaborator</Text>
+                    <TextInput
+                      placeholder="Search by name or username…"
+                      value={editorSearch}
+                      onChange={e => setEditorSearch(e.target.value)}
+                      leftSection={<Search size={14} />}
+                      size="sm"
+                    />
+                    {editorSearching && <Loader size="xs" color="gray" mt="xs" />}
+                    {editorResults.length > 0 && (
+                      <Stack gap="xs" mt="xs">
+                        {editorResults.map(u => (
+                          <Paper key={u.uid} withBorder p="xs" radius="md">
+                            <Group gap="sm">
+                              <Avatar src={u.profilePic?.currentUrl || null} size={28} radius="xl" />
+                              <Box style={{ flex: 1, minWidth: 0 }}>
+                                <Text size="sm" fw={500} truncate>{u.displayName || '(No name)'}</Text>
+                                {u.username && <Text size="xs" c="dimmed">@{u.username}</Text>}
+                              </Box>
+                              <Button
+                                size="xs" variant="default"
+                                leftSection={<UserPlus size={12} />}
+                                loading={addingEditor === u.uid}
+                                onClick={() => addEditor(u)}
+                              >
+                                Add
+                              </Button>
+                            </Group>
+                          </Paper>
+                        ))}
+                      </Stack>
+                    )}
+                  </Box>
+                </Stack>
+              </Paper>
+            )}
           </Stack>
         </Grid.Col>
 
@@ -380,6 +557,11 @@ function ManagePage() {
                 >
                   Copy default link
                 </Button>
+                {(listingData?.shares ?? 0) > 0 && (
+                  <Text size="xs" c="dimmed" ta="center">
+                    {listingData.shares} open{listingData.shares !== 1 ? 's' : ''} via default link
+                  </Text>
+                )}
               </Stack>
 
               <Divider />
@@ -387,27 +569,49 @@ function ManagePage() {
               {/* Share links */}
               <ShareLinksManager listingId={listingId} currentUserId={user?.uid} />
 
-              <Divider label="Danger zone" labelPosition="center" color="red" />
-
-              <Stack gap="xs">
-                <Button variant="light" color="red" fullWidth disabled>
-                  Change visibility
-                </Button>
-                <Button
-                  variant="filled"
-                  color="red"
-                  fullWidth
-                  leftSection={<Trash2 size={14} />}
-                  onClick={handleDelete}
-                >
-                  Delete listing
-                </Button>
-              </Stack>
+              {/* Danger zone — owner only */}
+              {isOwner && (
+                <>
+                  <Divider label="Danger zone" labelPosition="center" color="red" />
+                  <Stack gap="xs">
+                    <Button
+                      variant="light"
+                      color={archived ? "teal" : "orange"}
+                      fullWidth
+                      leftSection={archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+                      loading={archiveLoading}
+                      onClick={toggleArchive}
+                    >
+                      {archived ? "Unarchive listing" : "Archive listing"}
+                    </Button>
+                    <Button
+                      variant="filled"
+                      color="red"
+                      fullWidth
+                      leftSection={<Trash2 size={14} />}
+                      onClick={() => setDeleteOpen(true)}
+                    >
+                      Delete listing
+                    </Button>
+                  </Stack>
+                </>
+              )}
             </Stack>
           </Paper>
         </Grid.Col>
 
       </Grid>
+
+      {/* Delete confirmation modal */}
+      <Modal opened={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete listing" centered size="sm">
+        <Text size="sm" mb="xl">
+          Are you sure you want to delete <strong>{title || 'this listing'}</strong>? This cannot be undone.
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setDeleteOpen(false)}>Cancel</Button>
+          <Button color="red" loading={deleting} onClick={handleDelete}>Delete permanently</Button>
+        </Group>
+      </Modal>
     </Stack>
   );
 }
