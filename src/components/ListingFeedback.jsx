@@ -3,66 +3,14 @@ import {
   Tabs, Stack, Group, Text, Avatar, Box, Button, Textarea,
   Loader, ActionIcon, Divider,
 } from '@mantine/core';
-import { Star, StarHalf, MessageSquare, Reply, Trash2 } from 'lucide-react';
+import { Star, MessageSquare, Reply, Trash2 } from 'lucide-react';
+import StarRating from './StarRating';
 import {
   collection, doc, getDoc, getDocs, addDoc, setDoc, deleteDoc,
   updateDoc, query, orderBy, serverTimestamp,
 } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 
-// ── Star display (1–10 scale, 5 stars with half-star support) ────────
-// value: integer 0–10. Each star = 2 points. Half-star = odd value.
-function StarRow({ value, interactive = false, onChange, size = 16 }) {
-  const [hovered, setHovered] = useState(0);
-  const display = interactive ? (hovered || value) : value;
-
-  return (
-    <Group
-      gap={2}
-      style={{ userSelect: 'none' }}
-      onMouseLeave={() => interactive && setHovered(0)}
-    >
-      {[1, 2, 3, 4, 5].map(n => {
-        const leftVal  = n * 2 - 1; // half-star threshold
-        const rightVal = n * 2;     // full-star threshold
-        const full = display >= rightVal;
-        const half = !full && display >= leftVal;
-        const lit  = 'var(--mantine-color-yellow-5)';
-        const dim  = 'var(--mantine-color-gray-5)';
-
-        return (
-          <Box
-            key={n}
-            style={{ position: 'relative', display: 'inline-flex', cursor: interactive ? 'pointer' : 'default' }}
-          >
-            {/* Invisible left/right click zones for half-star picking */}
-            {interactive && (
-              <>
-                <Box
-                  style={{ position: 'absolute', left: 0, top: 0, width: '50%', height: '100%', zIndex: 1 }}
-                  onMouseEnter={() => setHovered(leftVal)}
-                  onClick={() => onChange?.(leftVal)}
-                />
-                <Box
-                  style={{ position: 'absolute', right: 0, top: 0, width: '50%', height: '100%', zIndex: 1 }}
-                  onMouseEnter={() => setHovered(rightVal)}
-                  onClick={() => onChange?.(rightVal)}
-                />
-              </>
-            )}
-            {full ? (
-              <Star size={size} fill={lit} color={lit} />
-            ) : half ? (
-              <StarHalf size={size} fill={lit} color={lit} />
-            ) : (
-              <Star size={size} fill="none" color={dim} />
-            )}
-          </Box>
-        );
-      })}
-    </Group>
-  );
-}
 
 function timeAgo(ts) {
   if (!ts?.toDate) return '';
@@ -101,8 +49,8 @@ function ReviewCard({ review, currentUserId, onDelete }) {
           <Group gap="xs" justify="space-between" wrap="nowrap">
             <Group gap="xs" align="center" wrap="nowrap">
               <Text size="sm" fw={600}>{review.authorName || 'Anonymous'}</Text>
-              <StarRow value={review.rating} size={12} />
-              <Text size="xs" c="dimmed">{review.rating}/10</Text>
+              <StarRating value={review.rating} size={12} />
+              <Text size="xs" c="dimmed">{Number(review.rating).toFixed(1)}/5</Text>
             </Group>
             <Group gap={4} style={{ flexShrink: 0 }}>
               <Text size="xs" c="dimmed">{timeAgo(review.createdAt)}</Text>
@@ -209,8 +157,8 @@ function ReviewsSection({ listingId, ownerId }) {
       {avg !== null && (
         <Group gap="sm" align="center">
           <Text size="xl" fw={700}>{avg.toFixed(1)}</Text>
-          <Text size="sm" c="dimmed" fw={500}>/10</Text>
-          <StarRow value={Math.round(avg)} size={18} />
+          <Text size="sm" c="dimmed" fw={500}>/5</Text>
+          <StarRating value={avg} size={18} />
           <Text size="sm" c="dimmed">
             ({reviews.length} review{reviews.length !== 1 ? 's' : ''})
           </Text>
@@ -236,10 +184,10 @@ function ReviewsSection({ listingId, ownerId }) {
               <Group gap="xs" align="center">
                 <Text size="xs" fw={500} c="dimmed">Your rating</Text>
                 {rating > 0 && (
-                  <Text size="xs" c="yellow" fw={600}>{rating}/10</Text>
+                  <Text size="xs" c="yellow" fw={600}>{rating}/5</Text>
                 )}
               </Group>
-              <StarRow value={rating} interactive onChange={setRating} size={24} />
+              <StarRating value={rating} interactive onChange={setRating} size={24} />
               <Textarea
                 placeholder="Share your experience (optional)"
                 value={text}

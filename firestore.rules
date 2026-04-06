@@ -2,123 +2,172 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Listings ────────────────────────────────────────────────────────
+    // ── Listings ──────────────────────────────────────────────────────────
     match /listings/{listingId} {
-      // Archived listings are only visible to their owner or editors
+      // Archived listings are only visible to their owner or editors.
+      // resource == null allows existence checks (getDoc on a non-existent doc).
       allow read: if resource == null
         || resource.data.get('archived', false) != true
         || (request.auth != null
             && (request.auth.uid == resource.data.owner
                 || request.auth.uid in resource.data.get('editors', [])));
-      // Owner or editors can write; anyone signed in can create
-      allow write: if request.auth != null
+
+      // Any signed-in user can create a listing.
+      allow create: if request.auth != null;
+
+      // Only the owner or an editor can update or delete a listing.
+      allow update, delete: if request.auth != null
         && (request.auth.uid == resource.data.owner
             || request.auth.uid in resource.data.get('editors', []));
-      allow create: if request.auth != null;
+
       // Any authenticated user may update only the computed rating aggregate
-      // (written client-side after a review is submitted or deleted)
+      // (written client-side after a review is submitted or deleted).
       allow update: if request.auth != null
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['rating', 'reviewCount']);
 
-      // ── Reviews (one per user, owner cannot self-review) ────────────
+      // Default share link click tracking — no auth required (public share links).
+      allow update: if request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['shares']);
+
+      // ── Reviews ──────────────────────────────────────────────────────────
       match /reviews/{reviewId} {
         allow read: if true;
-        // Doc ID must equal the author's uid — enforces one-review-per-user
-        // and makes it easy to find/overwrite an existing review.
-        // Listing owner is not allowed to review their own listing.
+
+        // Doc ID must equal the reviewer's uid (enforces one review per user).
+        // The listing owner cannot review their own listing.
         allow create: if request.auth != null
           && request.auth.uid == reviewId
           && get(/databases/$(database)/documents/listings/$(listingId)).data.owner
                != request.auth.uid;
-        // Author can edit or delete their own review
+
+        // Author can update or delete their own review only.
         allow update: if request.auth != null && request.auth.uid == reviewId;
         allow delete: if request.auth != null && request.auth.uid == reviewId;
       }
 
-      // ── Comments ─────────────────────────────────────────────────────
+      // ── Comments ─────────────────────────────────────────────────────────
       match /comments/{commentId} {
         allow read: if true;
         allow create: if request.auth != null;
-        // Only the comment author can delete their own comment
+        // Only the comment author can delete their own comment.
         allow delete: if request.auth != null
           && request.auth.uid == resource.data.authorId;
       }
     }
 
-    // ── Users ────────────────────────────────────────────────────────────
+    // ── Users ─────────────────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if true;
+
+      // Users can fully manage their own document.
       allow write: if request.auth != null && request.auth.uid == userId;
+
+      // Any authenticated user may update only the groupIds array.
+      // Needed when group admins add/remove members or a group is deleted —
+      // those operations must update the affected users' groupIds lists.
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['groupIds']);
     }
 
-    // ── Chats ────────────────────────────────────────────────────────────
+    // ── Chats ─────────────────────────────────────────────────────────────
     match /chats/{chatId} {
-      // Allow reading non-existent docs so callers can check existence
-      // before creating. For existing docs, only participants may read.
+      // Allow reads on non-existent docs (existence check before creating).
+      // For existing docs, only participants may read.
       allow read: if request.auth != null
-        && (resource == null || request.auth.uid in resource.data.participants);
+        && (resource == null
+            || request.auth.uid in resource.data.participants);
 
+      // Caller must include themselves in participants when creating.
       allow create: if request.auth != null
         && request.auth.uid in request.resource.data.participants;
 
-      // Participants can update (status, block, hide, unread counts, lastMessage…)
+      // Participants can update chat metadata (lastMessage, unread, blockedBy, hiddenBy…).
       allow update: if request.auth != null
         && request.auth.uid in resource.data.participants;
 
+      // Only group chats (chatId prefixed "group_") can be deleted, and only by
+      // a current participant (i.e. the group owner doing a group deletion).
+      allow delete: if request.auth != null
+        && chatId.matches('^group_.+')
+        && request.auth.uid in resource.data.participants;
+
+      // ── Messages ─────────────────────────────────────────────────────────
       match /messages/{msgId} {
-        // Only participants of the parent chat can read messages
+        // Only chat participants may read messages.
         allow read: if request.auth != null
           && request.auth.uid in
-            get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-        // Only the sender can create a message
+               get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+
+        // The message senderId must be the caller, and the caller must be a participant.
         allow create: if request.auth != null
-          && request.auth.uid == request.resource.data.senderId;
+          && request.auth.uid == request.resource.data.senderId
+          && request.auth.uid in
+               get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
       }
     }
 
-    // ── Share link aliases ───────────────────────────────────────────────
+    // ── Share link aliases ─────────────────────────────────────────────────
     match /shareLinks/{alias} {
       allow read: if true;
       allow create: if request.auth != null;
-      // Click tracking: anyone (including anonymous) can increment the
-      // three traffic fields. The owner can update anything.
+
+      // Click tracking: anyone (no auth needed) can increment the three traffic
+      // fields. The alias creator can update anything.
       allow update: if
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['totalClicks', 'sources', 'lastClickAt'])
         || (request.auth != null
             && request.auth.uid == resource.data.createdBy);
+
       allow delete: if request.auth != null
         && request.auth.uid == resource.data.createdBy;
     }
 
-    // ── Notifications ────────────────────────────────────────────────────
+    // ── Notifications ──────────────────────────────────────────────────────
     match /notifications/{userId}/items/{itemId} {
+      // Only the notification owner can read, mark-read, or delete their items.
       allow read, update, delete: if request.auth != null
         && request.auth.uid == userId;
+
+      // Any signed-in user can send a notification to any other user
+      // (e.g. chat message alerts, collab invites).
       allow create: if request.auth != null;
     }
 
-    // ── Groups ───────────────────────────────────────────────────────────
+    // ── Groups ────────────────────────────────────────────────────────────
     match /groups/{groupId} {
       allow read: if true;
       allow create: if request.auth != null;
+
+      // Only the group creator or a member with role admin/owner can update group details.
       allow update: if request.auth != null && (
         request.auth.uid == resource.data.createdBy
-        || exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid))
+        || (exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid))
+            && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid))
+                 .data.role in ['admin', 'owner'])
       );
+
+      // Only the group creator can delete the group.
       allow delete: if request.auth != null
         && request.auth.uid == resource.data.createdBy;
 
+      // ── Members ──────────────────────────────────────────────────────────
       match /members/{memberId} {
+        // Any signed-in user can read member lists (needed for group pages).
         allow read: if request.auth != null;
-        // Owner or admin can add/modify members
+
+        // Only the group creator or an admin/owner member can add or change members.
         allow write: if request.auth != null && (
-          request.auth.uid == get(/databases/$(database)/documents/groups/$(groupId)).data.createdBy
+          request.auth.uid ==
+            get(/databases/$(database)/documents/groups/$(groupId)).data.createdBy
           || (exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid))
-              && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid)).data.role in ['admin', 'owner'])
+              && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid))
+                   .data.role in ['admin', 'owner'])
         );
-        // Anyone can remove themselves
+
+        // Any member can remove themselves (leave the group).
         allow delete: if request.auth != null && request.auth.uid == memberId;
       }
     }
