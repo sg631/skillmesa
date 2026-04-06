@@ -4,6 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { Highlight } from "react-instantsearch";
 import { Link } from "react-router-dom";
 import { Card, Image, Text, Badge, Group, Stack, Avatar, Button, Box } from "@mantine/core";
+import StarRating from "./StarRating";
 
 const bannerBase = {
   flex: 1,
@@ -83,6 +84,18 @@ function AlgoliaHit({ hit }) {
         <Text size="sm" c="dimmed" lineClamp={3} style={{ flex: 1 }}>
           <Highlight attribute="description" hit={hit} />
         </Text>
+
+        {hit.rating != null ? (
+          <Group gap={6} align="center">
+            <StarRating value={hit.rating} size={12} />
+            <Text size="xs" fw={600} c="dimmed">{Number(hit.rating).toFixed(1)}/5</Text>
+            {hit.reviewCount > 0 && (
+              <Text size="xs" c="dimmed">({hit.reviewCount})</Text>
+            )}
+          </Group>
+        ) : (
+          <Text size="xs" c="dimmed">Unrated</Text>
+        )}
 
         <Box>
           {tags.length > 0 && (

@@ -4,7 +4,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { collection, doc, getDoc } from "firebase/firestore";
 import { Link } from "react-router-dom";
 import { Card, Image, Text, Badge, Group, Stack, Avatar, Button, Box } from "@mantine/core";
-import { Star, StarHalf } from "lucide-react";
+import StarRating from "./StarRating";
 
 const bannerBase = {
   flex: 1,
@@ -161,27 +161,16 @@ function ListingComponent({ id }) {
           {description || '\u00a0'}
         </Text>
 
-        {rating !== null && (
-          <Group gap={4} align="center">
-            {/* rating is 1–10; half-star if the rounded value is odd */}
-            {Math.round(rating) % 2 !== 0 ? (
-              <StarHalf
-                size={12}
-                fill="var(--mantine-color-yellow-5)"
-                color="var(--mantine-color-yellow-5)"
-              />
-            ) : (
-              <Star
-                size={12}
-                fill="var(--mantine-color-yellow-5)"
-                color="var(--mantine-color-yellow-5)"
-              />
-            )}
-            <Text size="xs" fw={600}>{rating.toFixed(1)}/10</Text>
+        {rating !== null ? (
+          <Group gap={6} align="center">
+            <StarRating value={rating} size={12} />
+            <Text size="xs" fw={600} c="dimmed">{rating.toFixed(1)}/5</Text>
             {reviewCount > 0 && (
               <Text size="xs" c="dimmed">({reviewCount})</Text>
             )}
           </Group>
+        ) : (
+          <Text size="xs" c="dimmed">Unrated</Text>
         )}
 
         <Box>
