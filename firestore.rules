@@ -2,173 +2,203 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Listings ──────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    // Returns true if the calling user owns or edits the given listing.
+    // Single get() — safe to call from subcollection rules.
+    function isListingManager(listingId) {
+      let l = get(/databases/$(database)/documents/listings/$(listingId));
+      return signedIn()
+        && (uid() == l.data.owner
+            || uid() in l.data.get('editors', []));
+    }
+
+    // Returns true if the calling user is enrolled in the given listing.
+    function isEnrolled(listingId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/listings/$(listingId)/enrollments/$(uid()));
+    }
+
+    // ── Listings ──────────────────────────────────────────────────────────────
     match /listings/{listingId} {
-      // Archived listings are only visible to their owner or editors.
-      // resource == null allows existence checks (getDoc on a non-existent doc).
+      // Non-archived listings are public. Archived listings are owner/editor-only.
+      // resource == null allows existence checks on non-existent docs.
       allow read: if resource == null
         || resource.data.get('archived', false) != true
-        || (request.auth != null
-            && (request.auth.uid == resource.data.owner
-                || request.auth.uid in resource.data.get('editors', [])));
+        || (signedIn()
+            && (uid() == resource.data.owner
+                || uid() in resource.data.get('editors', [])));
 
       // Any signed-in user can create a listing.
-      allow create: if request.auth != null;
+      allow create: if signedIn();
 
       // Only the owner or an editor can update or delete a listing.
-      allow update, delete: if request.auth != null
-        && (request.auth.uid == resource.data.owner
-            || request.auth.uid in resource.data.get('editors', []));
+      allow update, delete: if signedIn()
+        && (uid() == resource.data.owner
+            || uid() in resource.data.get('editors', []));
 
-      // Any authenticated user may update only the computed rating aggregate
-      // (written client-side after a review is submitted or deleted).
-      allow update: if request.auth != null
+      // Any signed-in user may write the rating aggregate fields after a review.
+      allow update: if signedIn()
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['rating', 'reviewCount']);
 
-      // Default share link click tracking — no auth required (public share links).
-      allow update: if request.resource.data.diff(resource.data).affectedKeys()
-        .hasOnly(['shares']);
+      // Share-link click tracking: no auth required, only 'shares' field.
+      allow update: if request.resource.data.diff(resource.data)
+        .affectedKeys().hasOnly(['shares']);
 
-      // ── Reviews ──────────────────────────────────────────────────────────
+      // ── Reviews ──────────────────────────────────────────────────────────────
       match /reviews/{reviewId} {
         allow read: if true;
 
-        // Doc ID must equal the reviewer's uid (enforces one review per user).
+        // Doc ID == reviewer uid → one review per user.
         // The listing owner cannot review their own listing.
-        allow create: if request.auth != null
-          && request.auth.uid == reviewId
-          && get(/databases/$(database)/documents/listings/$(listingId)).data.owner
-               != request.auth.uid;
+        // Must be enrolled to leave a review.
+        allow create: if signedIn()
+          && uid() == reviewId
+          && get(/databases/$(database)/documents/listings/$(listingId)).data.owner != uid()
+          && isEnrolled(listingId);
 
-        // Author can update or delete their own review only.
-        allow update: if request.auth != null && request.auth.uid == reviewId;
-        allow delete: if request.auth != null && request.auth.uid == reviewId;
+        // Reviewer can edit or delete their own review.
+        allow update, delete: if signedIn() && uid() == reviewId;
       }
 
-      // ── Comments ─────────────────────────────────────────────────────────
+      // ── Comments ─────────────────────────────────────────────────────────────
       match /comments/{commentId} {
         allow read: if true;
-        allow create: if request.auth != null;
-        // Only the comment author can delete their own comment.
-        allow delete: if request.auth != null
-          && request.auth.uid == resource.data.authorId;
+        allow create: if signedIn();
+        // Only the comment author can delete their comment.
+        allow delete: if signedIn() && uid() == resource.data.authorId;
+      }
+
+      // ── Files ────────────────────────────────────────────────────────────────
+      match /files/{fileId} {
+        // public  → anyone (no auth required)
+        // enroll  → enrolled users (or managers)
+        // managers → listing owner or editor only
+        allow read: if resource.data.privacy == 'public'
+          || isListingManager(listingId)
+          || (resource.data.privacy == 'enroll' && isEnrolled(listingId));
+
+        // Only the listing owner or an editor can upload, modify, or delete files.
+        allow create, update, delete: if isListingManager(listingId);
+      }
+
+      // ── Enrollments ──────────────────────────────────────────────────────────
+      match /enrollments/{enrolledUserId} {
+        // The enrolled user can read their own enrollment doc.
+        // Managers can read all enrollments for the listing.
+        allow read: if signedIn()
+          && (uid() == enrolledUserId || isListingManager(listingId));
+
+        // Only listing managers can grant or revoke enrollment.
+        allow create, update, delete: if isListingManager(listingId);
       }
     }
 
-    // ── Users ─────────────────────────────────────────────────────────────
+    // ── Users ─────────────────────────────────────────────────────────────────
     match /users/{userId} {
       allow read: if true;
 
-      // Users can fully manage their own document.
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Users fully manage their own document.
+      allow write: if signedIn() && uid() == userId;
 
-      // Any authenticated user may update only the groupIds array.
-      // Needed when group admins add/remove members or a group is deleted —
-      // those operations must update the affected users' groupIds lists.
-      allow update: if request.auth != null
+      // Group admins updating another user's groupIds array (member add/remove).
+      allow update: if signedIn()
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['groupIds']);
     }
 
-    // ── Chats ─────────────────────────────────────────────────────────────
+    // ── Chats ─────────────────────────────────────────────────────────────────
     match /chats/{chatId} {
-      // Allow reads on non-existent docs (existence check before creating).
-      // For existing docs, only participants may read.
-      allow read: if request.auth != null
-        && (resource == null
-            || request.auth.uid in resource.data.participants);
+      // Allow existence checks on non-existent docs; existing docs: participants only.
+      allow read: if signedIn()
+        && (resource == null || uid() in resource.data.participants);
 
-      // Caller must include themselves in participants when creating.
-      allow create: if request.auth != null
-        && request.auth.uid in request.resource.data.participants;
+      // Caller must be in participants when creating.
+      allow create: if signedIn()
+        && uid() in request.resource.data.participants;
 
-      // Participants can update chat metadata (lastMessage, unread, blockedBy, hiddenBy…).
-      allow update: if request.auth != null
-        && request.auth.uid in resource.data.participants;
+      // Any participant can update chat metadata (lastMessage, unread, hiddenBy, blockedBy…).
+      allow update: if signedIn()
+        && uid() in resource.data.participants;
 
-      // Only group chats (chatId prefixed "group_") can be deleted, and only by
-      // a current participant (i.e. the group owner doing a group deletion).
-      allow delete: if request.auth != null
+      // Only group chats ("group_…") can be deleted, and only by a participant.
+      allow delete: if signedIn()
         && chatId.matches('^group_.+')
-        && request.auth.uid in resource.data.participants;
+        && uid() in resource.data.participants;
 
-      // ── Messages ─────────────────────────────────────────────────────────
+      // ── Messages ─────────────────────────────────────────────────────────────
       match /messages/{msgId} {
-        // Only chat participants may read messages.
-        allow read: if request.auth != null
-          && request.auth.uid in
-               get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        allow read: if signedIn()
+          && uid() in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
 
-        // The message senderId must be the caller, and the caller must be a participant.
-        allow create: if request.auth != null
-          && request.auth.uid == request.resource.data.senderId
-          && request.auth.uid in
-               get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        allow create: if signedIn()
+          && uid() == request.resource.data.senderId
+          && uid() in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
       }
     }
 
-    // ── Share link aliases ─────────────────────────────────────────────────
+    // ── Share link aliases ─────────────────────────────────────────────────────
     match /shareLinks/{alias} {
       allow read: if true;
-      allow create: if request.auth != null;
+      allow create: if signedIn();
 
-      // Click tracking: anyone (no auth needed) can increment the three traffic
-      // fields. The alias creator can update anything.
+      // Click tracking (no auth); alias creator can update anything.
       allow update: if
         request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['totalClicks', 'sources', 'lastClickAt'])
-        || (request.auth != null
-            && request.auth.uid == resource.data.createdBy);
+        || (signedIn() && uid() == resource.data.createdBy);
 
-      allow delete: if request.auth != null
-        && request.auth.uid == resource.data.createdBy;
+      allow delete: if signedIn() && uid() == resource.data.createdBy;
     }
 
-    // ── Notifications ──────────────────────────────────────────────────────
+    // ── Notifications ──────────────────────────────────────────────────────────
     match /notifications/{userId}/items/{itemId} {
-      // Only the notification owner can read, mark-read, or delete their items.
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == userId;
+      // Only the recipient can read, update (mark-read), or delete their items.
+      allow read, update, delete: if signedIn() && uid() == userId;
 
-      // Any signed-in user can send a notification to any other user
-      // (e.g. chat message alerts, collab invites).
-      allow create: if request.auth != null;
+      // Any signed-in user can create a notification for any other user.
+      allow create: if signedIn();
     }
 
-    // ── Groups ────────────────────────────────────────────────────────────
+    // ── Groups ────────────────────────────────────────────────────────────────
     match /groups/{groupId} {
       allow read: if true;
-      allow create: if request.auth != null;
+      allow create: if signedIn();
 
-      // Only the group creator or a member with role admin/owner can update group details.
-      allow update: if request.auth != null && (
-        request.auth.uid == resource.data.createdBy
-        || (exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid))
-            && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid))
+      // Creator or admin/owner member can update group details.
+      allow update: if signedIn() && (
+        uid() == resource.data.createdBy
+        || (exists(/databases/$(database)/documents/groups/$(groupId)/members/$(uid()))
+            && get(/databases/$(database)/documents/groups/$(groupId)/members/$(uid()))
                  .data.role in ['admin', 'owner'])
       );
 
-      // Only the group creator can delete the group.
-      allow delete: if request.auth != null
-        && request.auth.uid == resource.data.createdBy;
+      // Only the creator can delete the group.
+      allow delete: if signedIn() && uid() == resource.data.createdBy;
 
-      // ── Members ──────────────────────────────────────────────────────────
+      // ── Members ──────────────────────────────────────────────────────────────
       match /members/{memberId} {
-        // Any signed-in user can read member lists (needed for group pages).
-        allow read: if request.auth != null;
+        // Any signed-in user can read the member list.
+        allow read: if signedIn();
 
-        // Only the group creator or an admin/owner member can add or change members.
-        allow write: if request.auth != null && (
-          request.auth.uid ==
-            get(/databases/$(database)/documents/groups/$(groupId)).data.createdBy
-          || (exists(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid))
-              && get(/databases/$(database)/documents/groups/$(groupId)/members/$(request.auth.uid))
+        // Creator or admin/owner can add or change members.
+        allow write: if signedIn() && (
+          uid() == get(/databases/$(database)/documents/groups/$(groupId)).data.createdBy
+          || (exists(/databases/$(database)/documents/groups/$(groupId)/members/$(uid()))
+              && get(/databases/$(database)/documents/groups/$(groupId)/members/$(uid()))
                    .data.role in ['admin', 'owner'])
         );
 
-        // Any member can remove themselves (leave the group).
-        allow delete: if request.auth != null && request.auth.uid == memberId;
+        // Any member can remove themselves (leave).
+        allow delete: if signedIn() && uid() == memberId;
       }
     }
   }

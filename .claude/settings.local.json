@@ -7,7 +7,8 @@
       "*",
       "Bash(grep -E \"\\\\.jsx$|\\\\.js$\")",
       "Bash(node -e \"const l = require\\('./node_modules/lucide-react/dist/cjs/lucide-react.js'\\); console.log\\(Object.keys\\(l\\).filter\\(k => /face|twitter|x$/i.test\\(k\\)\\).join\\('\\\\n'\\)\\)\")",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(firebase deploy:*)"
     ]
   }
 }

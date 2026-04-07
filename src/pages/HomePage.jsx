@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Title, Text, Stack, Group, Paper, Avatar, Badge, Box, Loader, Divider, ActionIcon, Tooltip,
-  useComputedColorScheme,
+  SimpleGrid, Image, useComputedColorScheme,
 } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { LinkButton } from '../components/LinkElements.jsx';
@@ -10,8 +10,9 @@ import NewChatModal from '../components/NewChatModal.jsx';
 import { auth, db } from '../firebase';
 import {
   collection, query, where, orderBy, limit, onSnapshot, doc, getDoc,
-  updateDoc, arrayUnion,
+  updateDoc, arrayUnion, collectionGroup, getDocs,
 } from 'firebase/firestore';
+import { Link } from 'react-router-dom';
 import { MessageSquare, Edit, Plus, X, Tag, Users } from 'lucide-react';
 
 const listingsCollection = collection(db, 'listings');
@@ -313,6 +314,60 @@ function ChatsOverview({ userId }) {
   );
 }
 
+function EnrolledSection({ userId }) {
+  const navigate = useNavigate();
+  const [enrollments, setEnrollments] = React.useState([]);
+  const [loading, setLoading]         = React.useState(true);
+
+  React.useEffect(() => {
+    if (!userId) return;
+    getDocs(
+      query(collectionGroup(db, 'enrollments'), where('userId', '==', userId))
+    )
+      .then(snap => setEnrollments(snap.docs.map(d => d.data())))
+      .catch(err => console.error('enrollments query:', err))
+      .finally(() => setLoading(false));
+  }, [userId]);
+
+  if (loading) {
+    return <Group justify="center" py="sm"><Loader size="xs" color="gray" /></Group>;
+  }
+
+  if (enrollments.length === 0) {
+    return (
+      <Text size="sm" c="dimmed" ta="center" py="sm">
+        Not enrolled in any listings.{' '}
+        <Text component={Link} to="/explore" c="cyan" size="sm">Browse Explore</Text> to find something.
+      </Text>
+    );
+  }
+
+  return (
+    <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="sm" w="100%">
+      {enrollments.map(e => (
+        <Paper
+          key={e.listingId}
+          withBorder
+          radius="md"
+          style={{ cursor: 'pointer', overflow: 'hidden' }}
+          onClick={() => navigate(`/listing/${e.listingId}`)}
+        >
+          <Image
+            src={e.listingThumbnailURL || null}
+            h={72}
+            fallbackSrc="https://placehold.co/400x72/f4f4f5/a1a1aa?text=No+Image"
+            style={{ objectFit: 'cover' }}
+          />
+          <Box p="xs">
+            <Text size="sm" fw={500} truncate title={e.listingTitle}>{e.listingTitle || 'Listing'}</Text>
+            <Badge size="xs" color="teal" variant="light" mt={4}>Enrolled</Badge>
+          </Box>
+        </Paper>
+      ))}
+    </SimpleGrid>
+  );
+}
+
 function HomePage() {
   const user = auth.currentUser;
 
@@ -338,6 +393,15 @@ function HomePage() {
       <Title order={1}>Dashboard</Title>
 
       <ChatsOverview userId={user.uid} />
+
+      <Divider w="100%" maw={700} />
+
+      <Stack w="100%" maw={700} gap="sm">
+        <Text fw={600} size="sm" c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }}>
+          Enrolled
+        </Text>
+        <EnrolledSection userId={user.uid} />
+      </Stack>
 
       <Divider w="100%" maw={700} />
 

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Title, Text, Button, Group, Paper, Stack, Select, Pill, PillsInput, Divider, SimpleGrid } from '@mantine/core';
+import { Title, Text, Button, Group, Paper, Stack, Select, Pill, PillsInput, Divider, SimpleGrid, Loader } from '@mantine/core';
+import { LocateFixed, LocateOff } from 'lucide-react';
 import {
   InstantSearch,
   useHits,
@@ -174,12 +175,48 @@ function MantineHitsGrid() {
   );
 }
 
+const RADIUS_OPTIONS = [
+  { value: '5000',   label: 'Within 5 km'  },
+  { value: '10000',  label: 'Within 10 km' },
+  { value: '25000',  label: 'Within 25 km' },
+  { value: '50000',  label: 'Within 50 km' },
+  { value: '100000', label: 'Within 100 km' },
+];
+
 function ExplorePage() {
   const [advancedOpen, setAdvancedOpen] = React.useState(false);
+  const [geoCoords, setGeoCoords]       = React.useState(null);   // { lat, lng }
+  const [geoRadius, setGeoRadius]       = React.useState('25000');
+  const [geoLoading, setGeoLoading]     = React.useState(false);
+  const [geoError, setGeoError]         = React.useState(null);
 
   React.useEffect(() => {
     document.title = 'Explore | skillmesa';
   }, []);
+
+  function toggleNearMe() {
+    if (geoCoords) {
+      setGeoCoords(null);
+      setGeoError(null);
+      return;
+    }
+    if (!navigator.geolocation) {
+      setGeoError('Geolocation not supported by your browser.');
+      return;
+    }
+    setGeoLoading(true);
+    setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeoCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGeoLoading(false);
+      },
+      () => {
+        setGeoError('Location access denied.');
+        setGeoLoading(false);
+      },
+    );
+  }
 
   return (
     <Stack gap="lg" py="xl" maw={1400} mx="auto" px="md">
@@ -197,7 +234,13 @@ function ExplorePage() {
         future={{ preserveSharedStateOnUnmount: true }}
         cleanUrlOnDispose={false}
       >
-        <Configure hitsPerPage={12} />
+        <Configure
+          hitsPerPage={12}
+          {...(geoCoords ? {
+            aroundLatLng: `${geoCoords.lat},${geoCoords.lng}`,
+            aroundRadius: parseInt(geoRadius, 10),
+          } : {})}
+        />
 
         {/* Filter bar */}
         <Paper withBorder p="md">
@@ -207,6 +250,28 @@ function ExplorePage() {
             <ModalityToggle />
             <TagPicker />
             <MenuDropdown attribute="type" label="Type" allLabel="All Types" />
+            {/* Near me geo-filter */}
+            <Button
+              variant={geoCoords ? 'filled' : 'default'}
+              color={geoCoords ? 'cyan' : undefined}
+              size="sm"
+              leftSection={geoLoading ? <Loader size={12} color="gray" /> : geoCoords ? <LocateOff size={14} /> : <LocateFixed size={14} />}
+              onClick={toggleNearMe}
+            >
+              {geoCoords ? 'Near me: on' : 'Near me'}
+            </Button>
+            {geoCoords && (
+              <Select
+                size="sm"
+                value={geoRadius}
+                onChange={v => v && setGeoRadius(v)}
+                data={RADIUS_OPTIONS}
+                style={{ width: 150 }}
+                withCheckIcon={false}
+                allowDeselect={false}
+              />
+            )}
+            {geoError && <Text size="xs" c="red">{geoError}</Text>}
             <Group gap="xs" ml="auto">
               <MantineClearRefinements />
               <Button

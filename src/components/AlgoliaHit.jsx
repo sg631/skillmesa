@@ -49,7 +49,7 @@ function AlgoliaHit({ hit }) {
             {online ? 'Online' : 'In-Person'}
           </Box>
         </Box>
-        {hit.zipCode && (
+        {(hit.locationCity || hit.zipCode) && (
           <Box
             className="banner-zip"
             style={{
@@ -60,7 +60,9 @@ function AlgoliaHit({ hit }) {
               borderBottom: '1px solid rgba(128,128,128,0.10)',
             }}
           >
-            {hit.zipCode}
+            {hit.locationCity
+              ? `${hit.locationCity}${hit.locationCountryCode ? `, ${hit.locationCountryCode}` : ''}`
+              : hit.zipCode}
           </Box>
         )}
       </Card.Section>

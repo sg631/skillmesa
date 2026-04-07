@@ -5,12 +5,13 @@ import { db, auth } from "../firebase";
 import { LinkButton } from "../components/LinkElements";
 import {
   Title, Text, Button, Group, Stack, Avatar, Badge, Divider,
-  Paper, ScrollArea, Image, Box, Grid, ActionIcon, Loader, Menu,
+  Paper, ScrollArea, Image, Box, Grid, ActionIcon, Loader, Menu, Tabs,
 } from "@mantine/core";
 import { ArrowLeft, Share2, Mail, MessageSquare, ChevronDown } from "lucide-react";
 import RichContentView from "../components/RichContentView";
 import ShareModal from "../components/ShareModal";
 import ListingFeedback from "../components/ListingFeedback";
+import ListingFiles from "../components/ListingFiles";
 
 function ListingDetailPage() {
   const { listingId } = useParams();
@@ -19,6 +20,7 @@ function ListingDetailPage() {
   const [ownerData, setOwnerData]     = useState(null);
   const [loading, setLoading]         = useState(true);
   const [shareOpen, setShareOpen]     = useState(false);
+  const [isEnrolled, setIsEnrolled]   = useState(false);
   const user = auth.currentUser;
 
   useEffect(() => {
@@ -39,6 +41,10 @@ function ListingDetailPage() {
         if (listing.owner) {
           const ownerSnap = await getDoc(doc(db, "users", listing.owner));
           if (isMounted) setOwnerData(ownerSnap.exists() ? ownerSnap.data() : null);
+        }
+        if (user) {
+          const enrollSnap = await getDoc(doc(db, "listings", listingSnap.id, "enrollments", user.uid));
+          if (isMounted) setIsEnrolled(enrollSnap.exists());
         }
       } catch (err) {
         console.error("Error fetching listing:", err);
@@ -143,18 +149,36 @@ function ListingDetailPage() {
               </Text>
             </Stack>
 
-            {/* Rich additional info */}
-            {listingData.richContent && (
-              <>
-                <Divider />
-                <Stack gap="xs">
-                  <Text fw={600} size="sm" c="dimmed" tt="uppercase" style={{ letterSpacing: '0.05em' }}>
-                    Additional Info
-                  </Text>
+            {/* Tabbed additional info */}
+            <Tabs defaultValue="details" keepMounted={false}>
+              <Tabs.List>
+                <Tabs.Tab value="details">Details</Tabs.Tab>
+                <Tabs.Tab value="files">Files</Tabs.Tab>
+                <Tabs.Tab value="image-editor" disabled>
+                  <Text size="xs" c="dimmed">Image Editor <Badge size="xs" variant="light" color="gray" ml={4}>Soon</Badge></Text>
+                </Tabs.Tab>
+                <Tabs.Tab value="ai" disabled>
+                  <Text size="xs" c="dimmed">AI <Badge size="xs" variant="light" color="gray" ml={4}>Soon</Badge></Text>
+                </Tabs.Tab>
+              </Tabs.List>
+
+              <Tabs.Panel value="details" pt="md">
+                {listingData.richContent ? (
                   <RichContentView content={listingData.richContent} />
-                </Stack>
-              </>
-            )}
+                ) : (
+                  <Text size="sm" c="dimmed">No additional details provided.</Text>
+                )}
+              </Tabs.Panel>
+
+              <Tabs.Panel value="files" pt="md">
+                <ListingFiles
+                  listingId={listingId}
+                  ownerId={listingData.owner}
+                  editors={listingData.editors || []}
+                  editorMode={false}
+                />
+              </Tabs.Panel>
+            </Tabs>
 
             <Divider />
 
@@ -168,11 +192,11 @@ function ListingDetailPage() {
                   </Stack>
                 </Grid.Col>
               )}
-              {listingData.zipCode && (
+              {(listingData.location || listingData.zipCode) && (
                 <Grid.Col span={{ base: 12, sm: 6 }}>
                   <Stack gap={2}>
                     <Text size="xs" c="dimmed" fw={500}>Location</Text>
-                    <Text size="sm">{listingData.zipCode}</Text>
+                    <Text size="sm">{listingData.location?.display || listingData.zipCode}</Text>
                   </Stack>
                 </Grid.Col>
               )}
@@ -224,6 +248,9 @@ function ListingDetailPage() {
                 </Box>
                 {isArchived && (
                   <Badge color="orange" variant="light" size="sm">Archived</Badge>
+                )}
+                {isEnrolled && (
+                  <Badge color="teal" variant="light" size="sm">Enrolled</Badge>
                 )}
               </Group>
 
@@ -350,6 +377,7 @@ function ListingDetailPage() {
           listingId={listingId}
           ownerId={listingData.owner}
           reviewCount={listingData.reviewCount ?? 0}
+          isEnrolled={isEnrolled}
         />
       </Box>
     </Stack>
