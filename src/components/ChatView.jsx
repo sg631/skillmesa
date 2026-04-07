@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc,
+  collection, doc, getDoc, getDocs, addDoc, setDoc, deleteDoc, updateDoc,
   query, orderBy, onSnapshot, serverTimestamp, increment, where,
   arrayUnion, arrayRemove,
 } from 'firebase/firestore';
@@ -13,7 +13,7 @@ import {
 } from '@mantine/core';
 import {
   ArrowLeft, Send, Paperclip, MoreVertical, ShieldOff, Shield,
-  Check, X, Clock, ExternalLink, Users, Tag,
+  Check, X, Clock, ExternalLink, Users, Tag, UserCheck,
 } from 'lucide-react';
 import ListingReferenceCard from './ListingReferenceCard';
 
@@ -170,6 +170,8 @@ export default function ChatView({ chatId: chatIdProp, otherUID, showBackButton 
   const [pickerOpen, setPickerOpen]         = useState(false);
   const [pickerListings, setPickerListings] = useState([]);
   const [actionLoading, setActionLoading]   = useState(false);
+  const [enrollState, setEnrollState]       = useState('unknown'); // 'unknown'|'enrolled'|'not-enrolled'
+  const [enrolling, setEnrolling]           = useState(false);
 
   // Type-specific state
   const [otherUser, setOtherUser]             = useState(null);
@@ -254,6 +256,68 @@ export default function ChatView({ chatId: chatIdProp, otherUID, showBackButton 
       setSenderNames(prev => ({ ...prev, ...names }));
     }).catch(console.error);
   }, [chatData?.participants, chatType]);
+
+  // For inquiry chats: check if the other participant is enrolled (manager view only)
+  const isListingManager = chatType === 'inquiry' && listingData && currentUser
+    && (currentUser.uid === listingData.owner || (listingData.editors || []).includes(currentUser.uid));
+
+  useEffect(() => {
+    if (!isListingManager || !effectiveOtherUID || !listingData) return;
+    setEnrollState('unknown');
+    getDoc(doc(db, 'listings', listingData.id, 'enrollments', effectiveOtherUID))
+      .then(snap => setEnrollState(snap.exists() ? 'enrolled' : 'not-enrolled'))
+      .catch(() => setEnrollState('unknown'));
+  }, [isListingManager, listingData?.id, effectiveOtherUID]);
+
+  async function grantEnrollmentFromChat() {
+    if (!listingData || !effectiveOtherUID || enrolling) return;
+    setEnrolling(true);
+    try {
+      await setDoc(doc(db, 'listings', listingData.id, 'enrollments', effectiveOtherUID), {
+        userId: effectiveOtherUID,
+        listingId: listingData.id,
+        listingTitle: listingData.title || '',
+        listingThumbnailURL: listingData.thumbnailURL || null,
+        grantedBy: currentUser.uid,
+        grantedAt: serverTimestamp(),
+        status: 'active',
+      });
+      // Notify the enrolled user
+      await addDoc(collection(db, 'notifications', effectiveOtherUID, 'items'), {
+        type: 'enrolled',
+        message: `You've been enrolled in "${listingData.title}"`,
+        read: false,
+        createdAt: serverTimestamp(),
+        link: `/listing/${listingData.id}`,
+      });
+      // System message in chat
+      const msg = `✓ ${otherUser?.displayName || 'User'} has been enrolled in "${listingData.title}"`;
+      await addDoc(collection(db, 'chats', chatId, 'messages'), {
+        senderId: currentUser.uid, type: 'text', text: msg, sentAt: serverTimestamp(),
+      });
+      await setDoc(doc(db, 'chats', chatId), {
+        lastMessage: msg, lastAt: serverTimestamp(),
+      }, { merge: true });
+      setEnrollState('enrolled');
+    } catch (err) {
+      console.error('grantEnrollment failed:', err);
+    } finally {
+      setEnrolling(false);
+    }
+  }
+
+  async function revokeEnrollmentFromChat() {
+    if (!listingData || !effectiveOtherUID || enrolling) return;
+    setEnrolling(true);
+    try {
+      await deleteDoc(doc(db, 'listings', listingData.id, 'enrollments', effectiveOtherUID));
+      setEnrollState('not-enrolled');
+    } catch (err) {
+      console.error('revokeEnrollment failed:', err);
+    } finally {
+      setEnrolling(false);
+    }
+  }
 
   // Subscribe to chatData
   useEffect(() => {
@@ -438,16 +502,42 @@ export default function ChatView({ chatId: chatIdProp, otherUID, showBackButton 
       {/* ── Inquiry listing banner ── */}
       {chatType === 'inquiry' && (
         <Box style={bannerStyle}>
-          <Group gap="xs">
-            <Tag size={12} style={{ opacity: 0.6, flexShrink: 0 }} />
-            <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>Re:</Text>
-            <Text
-              size="xs" fw={500} truncate
-              style={{ cursor: listingData ? 'pointer' : 'default', flex: 1, minWidth: 0 }}
-              onClick={() => listingData && navigate(`/listing/${listingData.id}`)}
-            >
-              {listingData ? listingData.title : chatData?.listingId ? 'Loading…' : 'Inquiry'}
-            </Text>
+          <Group gap="xs" justify="space-between" wrap="nowrap">
+            <Group gap="xs" wrap="nowrap" style={{ minWidth: 0, flex: 1 }}>
+              <Tag size={12} style={{ opacity: 0.6, flexShrink: 0 }} />
+              <Text size="xs" c="dimmed" style={{ flexShrink: 0 }}>Re:</Text>
+              <Text
+                size="xs" fw={500} truncate
+                style={{ cursor: listingData ? 'pointer' : 'default', minWidth: 0 }}
+                onClick={() => listingData && navigate(`/listing/${listingData.id}`)}
+              >
+                {listingData ? listingData.title : chatData?.listingId ? 'Loading…' : 'Inquiry'}
+              </Text>
+            </Group>
+            {/* Enroll / unenroll button — visible to listing managers only */}
+            {isListingManager && enrollState !== 'unknown' && (
+              enrollState === 'enrolled' ? (
+                <Button
+                  size="xs" variant="light" color="teal"
+                  leftSection={<UserCheck size={12} />}
+                  loading={enrolling}
+                  onClick={revokeEnrollmentFromChat}
+                  style={{ flexShrink: 0 }}
+                >
+                  Enrolled
+                </Button>
+              ) : (
+                <Button
+                  size="xs" variant="default"
+                  leftSection={<UserCheck size={12} />}
+                  loading={enrolling}
+                  onClick={grantEnrollmentFromChat}
+                  style={{ flexShrink: 0 }}
+                >
+                  Enroll
+                </Button>
+              )
+            )}
           </Group>
         </Box>
       )}

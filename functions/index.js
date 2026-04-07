@@ -46,6 +46,15 @@ function buildAlgoliaRecord(docId, data, ownerData) {
     modality: data.online ? "Online" : "In-Person",
     thumbnailURL: data.thumbnailURL || "",
     price: typeof data.price === "number" ? data.price : 0,
+    // Location — structured international format
+    ...(data.location?.lat != null ? {
+      _geoloc: { lat: data.location.lat, lng: data.location.lng },
+    } : {}),
+    locationCity:        data.location?.city        || "",
+    locationRegion:      data.location?.region      || "",
+    locationCountry:     data.location?.country     || "",
+    locationCountryCode: data.location?.countryCode || "",
+    // Keep zipCode for backward compat with older listings
     zipCode: data.zipCode || "",
     createdAt: data.createdAt || "",
     createdAtTimestamp: data.createdAt ? Math.floor(new Date(data.createdAt).getTime() / 1000) : 0,

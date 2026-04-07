@@ -70,7 +70,7 @@ function ReviewCard({ review, currentUserId, onDelete }) {
   );
 }
 
-function ReviewsSection({ listingId, ownerId }) {
+function ReviewsSection({ listingId, ownerId, isEnrolled }) {
   const user    = auth.currentUser;
   const isOwner = Boolean(user && ownerId && user.uid === ownerId);
 
@@ -166,7 +166,16 @@ function ReviewsSection({ listingId, ownerId }) {
       )}
 
       {/* Write / edit form */}
-      {user && !isOwner && (
+      {!user && (
+        <Text size="sm" c="dimmed">Sign in to leave a review.</Text>
+      )}
+      {user && isOwner && (
+        <Text size="xs" c="dimmed">You cannot review your own listing.</Text>
+      )}
+      {user && !isOwner && !isEnrolled && (
+        <Text size="xs" c="dimmed">Get enrolled in this listing to leave a review.</Text>
+      )}
+      {user && !isOwner && isEnrolled && (
         <>
           {!editing && !myReview && (
             <Button variant="default" size="xs" w="fit-content" onClick={() => setEditing(true)}>
@@ -212,12 +221,6 @@ function ReviewsSection({ listingId, ownerId }) {
             </Stack>
           )}
         </>
-      )}
-      {isOwner && (
-        <Text size="xs" c="dimmed">You cannot review your own listing.</Text>
-      )}
-      {!user && (
-        <Text size="sm" c="dimmed">Sign in to leave a review.</Text>
       )}
 
       {/* Review list */}
@@ -420,7 +423,7 @@ function CommentsSection({ listingId }) {
 }
 
 // ── Exported tabbed component ────────────────────────────────────────
-export default function ListingFeedback({ listingId, ownerId, reviewCount }) {
+export default function ListingFeedback({ listingId, ownerId, reviewCount, isEnrolled = false }) {
   return (
     <Tabs defaultValue="ratings" keepMounted={false}>
       <Tabs.List>
@@ -433,7 +436,7 @@ export default function ListingFeedback({ listingId, ownerId, reviewCount }) {
       </Tabs.List>
 
       <Tabs.Panel value="ratings" pt="lg">
-        <ReviewsSection listingId={listingId} ownerId={ownerId} />
+        <ReviewsSection listingId={listingId} ownerId={ownerId} isEnrolled={isEnrolled} />
       </Tabs.Panel>
       <Tabs.Panel value="comments" pt="lg">
         <CommentsSection listingId={listingId} />

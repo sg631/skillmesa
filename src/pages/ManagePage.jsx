@@ -1,18 +1,20 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
-import { doc, getDoc, setDoc, deleteDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, limit, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, limit, getDocs, addDoc, serverTimestamp, collectionGroup } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "../firebase";
 import { LinkButton } from "../components/LinkElements";
 import showAlert from "../components/ShowAlert";
 import TextEditor from "../components/TextEditor";
 import ShareLinksManager from "../components/ShareLinksManager";
+import LocationPicker from "../components/LocationPicker";
 import {
   Title, Text, TextInput, Textarea, Button, Group, Stack, Avatar,
   Badge, Divider, Paper, Code, ScrollArea, Image, Box, Grid,
-  ActionIcon, Loader, TagsInput, Modal,
+  ActionIcon, Loader, TagsInput, Modal, Tabs,
 } from "@mantine/core";
-import { ArrowLeft, Share2, Save, Trash2, Upload, Archive, ArchiveRestore, UserPlus, X, Search } from "lucide-react";
+import { ArrowLeft, Share2, Save, Trash2, Upload, Archive, ArchiveRestore, UserPlus, X, Search, UserCheck, UserMinus } from "lucide-react";
+import ListingFiles from "../components/ListingFiles";
 
 const CATEGORIES = [
   { value: "coding",       label: "Coding and Development" },
@@ -51,6 +53,25 @@ function CollaboratorRow({ uid, onRemove }) {
   );
 }
 
+function EnrolledUserRow({ uid, onRevoke }) {
+  const [userData, setUserData] = useState(null);
+  useEffect(() => {
+    getDoc(doc(db, 'users', uid)).then(s => { if (s.exists()) setUserData(s.data()); }).catch(() => {});
+  }, [uid]);
+  return (
+    <Group gap="sm" wrap="nowrap">
+      <Avatar src={userData?.profilePic?.currentUrl || null} size={32} radius="xl" style={{ flexShrink: 0 }} />
+      <Box style={{ flex: 1, minWidth: 0 }}>
+        <Text size="sm" fw={500} truncate>{userData?.displayName || '…'}</Text>
+        {userData?.username && <Text size="xs" c="dimmed">@{userData.username}</Text>}
+      </Box>
+      <ActionIcon variant="subtle" color="red" size="sm" onClick={() => onRevoke(uid)}>
+        <UserMinus size={13} />
+      </ActionIcon>
+    </Group>
+  );
+}
+
 function ManagePage() {
   const { listingId } = useParams();
   const navigate = useNavigate();
@@ -65,7 +86,7 @@ function ManagePage() {
   const [description, setDescription] = useState("");
   const [tags, setTags]               = useState([]);
   const [price, setPrice]             = useState("");
-  const [zipCode, setZipCode]         = useState("");
+  const [location, setLocation]       = useState(null);
   const [richContent, setRichContent] = useState("");
 
   // Editors / collaborators
@@ -74,6 +95,14 @@ function ManagePage() {
   const [editorResults, setEditorResults] = useState([]);
   const [editorSearching, setEditorSearching] = useState(false);
   const [addingEditor, setAddingEditor] = useState(null);
+
+  // Enrollments
+  const [enrollments, setEnrollments]           = useState([]);
+  const [enrollLoading, setEnrollLoading]       = useState(false);
+  const [enrollSearch, setEnrollSearch]         = useState('');
+  const [enrollResults, setEnrollResults]       = useState([]);
+  const [enrollSearching, setEnrollSearching]   = useState(false);
+  const [addingEnroll, setAddingEnroll]         = useState(null);
 
   // Thumbnail
   const [newThumbnail, setNewThumbnail]         = useState(null);
@@ -107,7 +136,7 @@ function ManagePage() {
           setDescription(listing.description || "");
           setTags(listing.tags || []);
           setPrice(listing.price != null ? String(listing.price) : "");
-          setZipCode(listing.zipCode || "");
+          setLocation(listing.location || null);
           setRichContent(listing.richContent || "");
           setEditors(listing.editors || []);
           setArchived(listing.archived || false);
@@ -128,6 +157,8 @@ function ManagePage() {
     fetchListing();
     return () => { isMounted = false; };
   }, [listingId]);
+
+  useEffect(() => { if (listingId) loadEnrollments(); }, [listingId]);
 
   // Editor search debounce
   useEffect(() => {
@@ -161,6 +192,38 @@ function ManagePage() {
     return () => clearTimeout(timer);
   }, [editorSearch, editors, listingData?.owner]);
 
+  // Enrollment search debounce
+  useEffect(() => {
+    if (!enrollSearch.trim()) { setEnrollResults([]); return; }
+    setEnrollSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const term = enrollSearch.trim();
+        const enrolledSet = new Set([listingData?.owner, ...editors, ...enrollments.map(e => e.id)]);
+        const [snap1, snap2] = await Promise.all([
+          getDocs(query(collection(db, 'users'), where('displayName', '>=', term), where('displayName', '<=', term + '\uf8ff'), limit(6))),
+          getDocs(query(collection(db, 'users'), where('username', '>=', term.toLowerCase()), where('username', '<=', term.toLowerCase() + '\uf8ff'), limit(6))),
+        ]);
+        const seen = new Set();
+        const users = [];
+        for (const snap of [snap1, snap2]) {
+          for (const d of snap.docs) {
+            if (!seen.has(d.id) && !enrolledSet.has(d.id)) {
+              seen.add(d.id);
+              users.push({ uid: d.id, ...d.data() });
+            }
+          }
+        }
+        setEnrollResults(users.slice(0, 6));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setEnrollSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [enrollSearch, enrollments, editors, listingData?.owner]);
+
   function handleThumbnailSelect(file) {
     if (!file) return;
     setNewThumbnail(file);
@@ -176,7 +239,7 @@ function ManagePage() {
         tags,
         richContent,
         price: Number(parseFloat(String(price).replace(/[^0-9.]/g, '') || 0).toFixed(2)),
-        zipCode,
+        location,
       };
 
       if (newThumbnail) {
@@ -255,6 +318,59 @@ function ManagePage() {
     } catch (err) {
       console.error(err);
       showAlert("Failed to remove collaborator.");
+    }
+  }
+
+  // ── Enrollment management ──
+  async function loadEnrollments() {
+    setEnrollLoading(true);
+    try {
+      const snap = await getDocs(collection(db, 'listings', listingId, 'enrollments'));
+      setEnrollments(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setEnrollLoading(false);
+    }
+  }
+
+  async function grantEnrollment(targetUser) {
+    setAddingEnroll(targetUser.uid);
+    try {
+      await setDoc(doc(db, 'listings', listingId, 'enrollments', targetUser.uid), {
+        userId: targetUser.uid,
+        listingId,
+        listingTitle: title,
+        listingThumbnailURL: listingData.thumbnailURL || null,
+        grantedBy: user.uid,
+        grantedAt: serverTimestamp(),
+        status: 'active',
+      });
+      await addDoc(collection(db, 'notifications', targetUser.uid, 'items'), {
+        type: 'enrolled',
+        message: `You've been enrolled in "${title}"`,
+        read: false,
+        createdAt: serverTimestamp(),
+        link: `/listing/${listingId}`,
+      });
+      setEnrollSearch('');
+      setEnrollResults([]);
+      await loadEnrollments();
+    } catch (err) {
+      console.error(err);
+      showAlert('Failed to enroll user.');
+    } finally {
+      setAddingEnroll(null);
+    }
+  }
+
+  async function revokeEnrollment(targetUid) {
+    try {
+      await deleteDoc(doc(db, 'listings', listingId, 'enrollments', targetUid));
+      setEnrollments(prev => prev.filter(e => e.id !== targetUid));
+    } catch (err) {
+      console.error(err);
+      showAlert('Failed to revoke enrollment.');
     }
   }
 
@@ -389,12 +505,7 @@ function ManagePage() {
                 />
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 6 }}>
-                <TextInput
-                  label="ZIP Code"
-                  placeholder="e.g. 95630"
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
-                />
+                <LocationPicker value={location} onChange={setLocation} />
               </Grid.Col>
               {categoryLabel && (
                 <Grid.Col span={{ base: 12, sm: 6 }}>
@@ -423,12 +534,92 @@ function ManagePage() {
               splitChars={[',']}
             />
 
-            {/* Rich text additional info */}
-            <Stack gap="xs">
-              <Text size="sm" fw={500}>Additional Info</Text>
-              <Text size="xs" c="dimmed">Rich text shown on the listing page — add details, schedules, requirements, etc.</Text>
-              <TextEditor initialState={richContent} onChange={setRichContent} />
-            </Stack>
+            {/* Tabbed additional info */}
+            <Tabs defaultValue="details" keepMounted={false}>
+              <Tabs.List>
+                <Tabs.Tab value="details">Details</Tabs.Tab>
+                <Tabs.Tab value="files">Files</Tabs.Tab>
+                <Tabs.Tab value="image-editor" disabled>
+                  <Text size="xs" c="dimmed">Image Editor <Badge size="xs" variant="light" color="gray" ml={4}>Soon</Badge></Text>
+                </Tabs.Tab>
+                <Tabs.Tab value="ai" disabled>
+                  <Text size="xs" c="dimmed">AI <Badge size="xs" variant="light" color="gray" ml={4}>Soon</Badge></Text>
+                </Tabs.Tab>
+              </Tabs.List>
+
+              <Tabs.Panel value="details" pt="md">
+                <Stack gap="xs">
+                  <Text size="xs" c="dimmed">Rich text shown on the listing page — add details, schedules, requirements, etc.</Text>
+                  <TextEditor initialState={richContent} onChange={setRichContent} />
+                </Stack>
+              </Tabs.Panel>
+
+              <Tabs.Panel value="files" pt="md">
+                <ListingFiles
+                  listingId={listingId}
+                  ownerId={listingData.owner}
+                  editors={editors}
+                  editorMode={true}
+                />
+              </Tabs.Panel>
+            </Tabs>
+
+            {/* ── Enrollments section (all managers) ── */}
+            <Paper withBorder p="lg" radius="md">
+              <Stack gap="md">
+                <Box>
+                  <Text fw={600} size="sm">Enrollments</Text>
+                  <Text size="xs" c="dimmed">Enrolled users can access enroll-tier files and leave reviews.</Text>
+                </Box>
+
+                {enrollLoading ? (
+                  <Loader size="xs" color="gray" />
+                ) : enrollments.length > 0 ? (
+                  <Stack gap="sm">
+                    {enrollments.map(enr => (
+                      <EnrolledUserRow key={enr.id} uid={enr.id} onRevoke={revokeEnrollment} />
+                    ))}
+                  </Stack>
+                ) : (
+                  <Text size="xs" c="dimmed">No one is enrolled yet.</Text>
+                )}
+
+                <Box>
+                  <Text size="xs" fw={500} mb={6}>Enroll a user</Text>
+                  <TextInput
+                    placeholder="Search by name or username…"
+                    value={enrollSearch}
+                    onChange={e => setEnrollSearch(e.target.value)}
+                    leftSection={<Search size={14} />}
+                    size="sm"
+                  />
+                  {enrollSearching && <Loader size="xs" color="gray" mt="xs" />}
+                  {enrollResults.length > 0 && (
+                    <Stack gap="xs" mt="xs">
+                      {enrollResults.map(u => (
+                        <Paper key={u.uid} withBorder p="xs" radius="md">
+                          <Group gap="sm">
+                            <Avatar src={u.profilePic?.currentUrl || null} size={28} radius="xl" />
+                            <Box style={{ flex: 1, minWidth: 0 }}>
+                              <Text size="sm" fw={500} truncate>{u.displayName || '(No name)'}</Text>
+                              {u.username && <Text size="xs" c="dimmed">@{u.username}</Text>}
+                            </Box>
+                            <Button
+                              size="xs" variant="default"
+                              leftSection={<UserCheck size={12} />}
+                              loading={addingEnroll === u.uid}
+                              onClick={() => grantEnrollment(u)}
+                            >
+                              Enroll
+                            </Button>
+                          </Group>
+                        </Paper>
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
+              </Stack>
+            </Paper>
 
             {/* ── Collaborators section (owner only) ── */}
             {isOwner && (

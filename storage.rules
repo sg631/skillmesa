@@ -1,8 +1,8 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    // Listing thumbnails — anyone can read, any signed-in user can write
-    match /listings/{listingId}/{fileName} {
+    // Listing assets (thumbnails + uploaded files) — anyone can read, any signed-in user can write
+    match /listings/{listingId}/{allPaths=**} {
       allow read: if true;
       allow write: if request.auth != null;
     }

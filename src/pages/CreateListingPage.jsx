@@ -10,6 +10,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Upload, Users } from 'lucide-react';
 import showAlert from '../components/ShowAlert';
+import LocationPicker from '../components/LocationPicker';
 
 const CATEGORIES = [
   { value: "coding",       label: "Coding and Development" },
@@ -52,7 +53,7 @@ function CreateListingPage() {
   const [type, setType]               = React.useState("class");
   const [online, setOnline]           = React.useState("in-person");
   const [price, setPrice]             = React.useState("");
-  const [zipCode, setZipCode]         = React.useState("");
+  const [location, setLocation]       = React.useState(null);
 
   React.useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
@@ -91,7 +92,7 @@ function CreateListingPage() {
     if (!description.trim()) { showAlert("Please add a description."); return; }
     if (tags.length === 0) { showAlert("Please add at least one tag."); return; }
     if (!price) { showAlert("Please set a price."); return; }
-    if (!zipCode) { showAlert("Please enter a ZIP code."); return; }
+    if (!location) { showAlert("Please enter a location."); return; }
     if (!selectedImage) { showAlert("Please upload a thumbnail image."); return; }
 
     setIsSubmitting(true);
@@ -120,7 +121,7 @@ function CreateListingPage() {
         thumbnailURL: "",
         createdAt:   new Date().toISOString(),
         price:       Number(parseFloat(String(price).replace(/[^0-9.]/g, '')).toFixed(2)),
-        zipCode,
+        location,
         ...(ownerGroupId ? { ownerType: 'group', ownerGroupId } : {}),
       };
 
@@ -272,11 +273,9 @@ function CreateListingPage() {
                 />
               </Grid.Col>
               <Grid.Col span={{ base: 12, sm: 6 }}>
-                <TextInput
-                  label="ZIP Code"
-                  placeholder="e.g. 95630"
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
+                <LocationPicker
+                  value={location}
+                  onChange={setLocation}
                   required
                 />
               </Grid.Col>
