@@ -172,7 +172,7 @@ service cloud.firestore {
     // Allows collectionGroup('enrollments').where('userId','==', uid) in HomePage.
     // The doc ID equals the enrolled user's UID, so uid() == enrolledUserId is safe.
     match /{path=**}/enrollments/{enrolledUserId} {
-      allow read: if signedIn() && uid() == enrolledUserId;
+      allow read: if signedIn() && resource.data.userId == uid();
     }
 
     // ── Groups ────────────────────────────────────────────────────────────────
