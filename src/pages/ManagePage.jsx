@@ -117,6 +117,9 @@ function ManagePage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting]     = useState(false);
 
+  // Group membership (for group-owned listings)
+  const [isGroupMember, setIsGroupMember] = useState(false);
+
   const user = auth.currentUser;
 
   useEffect(() => {
@@ -159,6 +162,13 @@ function ManagePage() {
   }, [listingId]);
 
   useEffect(() => { if (listingId) loadEnrollments(); }, [listingId]);
+
+  useEffect(() => {
+    if (!user || !listingData?.ownerGroupId) return;
+    getDoc(doc(db, 'groups', listingData.ownerGroupId, 'members', user.uid))
+      .then(snap => setIsGroupMember(snap.exists()))
+      .catch(() => {});
+  }, [listingData?.ownerGroupId, user?.uid]);
 
   // Editor search debounce
   useEffect(() => {
@@ -391,7 +401,7 @@ function ManagePage() {
 
   const isOwner  = Boolean(user && listingData.owner === user.uid);
   const isEditor = Boolean(user && (listingData.editors || []).includes(user.uid));
-  if (!isOwner && !isEditor) return <Navigate to={`/listing/${listingId}`} />;
+  if (!isOwner && !isEditor && !isGroupMember) return <Navigate to={`/listing/${listingId}`} />;
 
   const ownerName     = ownerData?.displayName || "Unknown User";
   const profilePicUrl = ownerData?.profilePic?.currentUrl || null;
@@ -776,7 +786,7 @@ function ManagePage() {
                       {archived ? "Unarchive listing" : "Archive listing"}
                     </Button>
                     <Button
-                      variant="filled"
+                      variant="light"
                       color="red"
                       fullWidth
                       leftSection={<Trash2 size={14} />}

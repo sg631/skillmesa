@@ -16,7 +16,7 @@ import { db, storage, auth } from '../firebase';
 // ── Privacy tier definitions ─────────────────────────────────────────
 const PRIVACY = [
   { value: 'public',   label: 'Public',   Icon: Globe,        color: 'green',  desc: 'Anyone can download' },
-  { value: 'enroll',   label: 'Enrolled', Icon: Lock,         color: 'blue',   desc: 'Signed-in users (enrollment coming soon)' },
+  { value: 'enroll',   label: 'Enrolled', Icon: Lock,         color: 'blue',   desc: 'Enrolled users only' },
   { value: 'managers', label: 'Managers', Icon: ShieldCheck,  color: 'orange', desc: 'Owner and editors only' },
 ];
 
@@ -48,11 +48,12 @@ function FileIcon({ mimeType = '', size = 15 }) {
   return <File size={size} />;
 }
 
-function canAccess(file, user, ownerId, editors) {
+function canAccess(file, user, ownerId, editors, isEnrolled = false) {
   if (file.privacy === 'public') return true;
   if (!user) return false;
   if (user.uid === ownerId || editors.includes(user.uid)) return true;
-  return file.privacy === 'enroll';
+  if (file.privacy === 'enroll') return isEnrolled;
+  return false;
 }
 
 // ── File preview modal ───────────────────────────────────────────────
@@ -206,7 +207,7 @@ function FilePreviewModal({ file, onClose }) {
 }
 
 // ── Main component ───────────────────────────────────────────────────
-export default function ListingFiles({ listingId, ownerId, editors = [], editorMode = false }) {
+export default function ListingFiles({ listingId, ownerId, editors = [], editorMode = false, isEnrolled = false }) {
   const user  = auth.currentUser;
   const isMgr = Boolean(user && (user.uid === ownerId || editors.includes(user.uid)));
 
@@ -294,7 +295,7 @@ export default function ListingFiles({ listingId, ownerId, editors = [], editorM
 
   const visibleFiles = editorMode
     ? files
-    : files.filter(f => canAccess(f, user, ownerId, editors));
+    : files.filter(f => canAccess(f, user, ownerId, editors, isEnrolled));
 
   if (loading) {
     return <Group justify="center" py="lg"><Loader color="gray" size="sm" /></Group>;
@@ -351,7 +352,7 @@ export default function ListingFiles({ listingId, ownerId, editors = [], editorM
           <Stack gap="xs">
             {visibleFiles.map(file => {
               const meta       = privacyMeta(file.privacy);
-              const accessible = canAccess(file, user, ownerId, editors);
+              const accessible = canAccess(file, user, ownerId, editors, isEnrolled);
               const kind       = previewKind(file.mimeType);
               const canPreview = accessible && kind !== null;
 

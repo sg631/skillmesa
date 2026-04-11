@@ -65,7 +65,7 @@ export default function TextEditorToolbar() {
 
   return (
     <>
-      <Group gap={4} p={6} style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', background: 'var(--mantine-color-gray-0)', borderRadius: '8px 8px 0 0' }}>
+      <Group gap={4} p={6} style={{ borderBottom: '1px solid var(--mantine-color-gray-3)', background: 'var(--mantine-color-default)', borderRadius: '8px 8px 0 0' }}>
         <Tooltip label="Bold">
           <ActionIcon variant="subtle" color="gray" onClick={() => editor.dispatchCommand(FORMAT_TEXT_COMMAND, "bold")}>
             <Bold size={16} />

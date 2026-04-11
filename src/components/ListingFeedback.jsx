@@ -7,8 +7,9 @@ import { Star, MessageSquare, Reply, Trash2 } from 'lucide-react';
 import StarRating from './StarRating';
 import {
   collection, doc, getDoc, getDocs, addDoc, setDoc, deleteDoc,
-  updateDoc, query, orderBy, serverTimestamp,
+  updateDoc, query, orderBy, serverTimestamp, Timestamp,
 } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 import { db, auth } from '../firebase';
 
 
@@ -279,12 +280,17 @@ function CommentItem({ comment, currentUserId, onDelete, onReply, depth = 0 }) {
 }
 
 function CommentsSection({ listingId }) {
-  const user = auth.currentUser;
+  const [user, setUser]             = useState(auth.currentUser);
   const [comments, setComments]     = useState([]);
   const [loading, setLoading]       = useState(true);
   const [text, setText]             = useState('');
   const [replyTo, setReplyTo]       = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, u => setUser(u));
+    return () => unsub();
+  }, []);
 
   async function loadComments() {
     setLoading(true);
@@ -308,18 +314,22 @@ function CommentsSection({ listingId }) {
     try {
       const userSnap = await getDoc(doc(db, 'users', user.uid));
       const ud       = userSnap.exists() ? userSnap.data() : {};
-      await addDoc(collection(db, 'listings', listingId, 'comments'), {
+      const newComment = {
         text:       text.trim(),
         authorId:   user.uid,
         authorName: ud.displayName || user.email || 'Anonymous',
         authorPic:  ud.profilePic?.currentUrl || null,
         parentId:   replyTo?.id ?? null,
         parentName: replyTo?.authorName ?? null,
-        createdAt:  serverTimestamp(),
+        createdAt:  Timestamp.now(),
+      };
+      const ref = await addDoc(collection(db, 'listings', listingId, 'comments'), {
+        ...newComment,
+        createdAt: serverTimestamp(),
       });
+      setComments(prev => [...prev, { id: ref.id, ...newComment }]);
       setText('');
       setReplyTo(null);
-      await loadComments();
     } catch (e) {
       console.error('submitComment failed:', e);
     } finally {

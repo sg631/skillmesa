@@ -176,6 +176,7 @@ function ListingDetailPage() {
                   ownerId={listingData.owner}
                   editors={listingData.editors || []}
                   editorMode={false}
+                  isEnrolled={isEnrolled}
                 />
               </Tabs.Panel>
             </Tabs>
@@ -192,14 +193,20 @@ function ListingDetailPage() {
                   </Stack>
                 </Grid.Col>
               )}
-              {(listingData.location || listingData.zipCode) && (
-                <Grid.Col span={{ base: 12, sm: 6 }}>
-                  <Stack gap={2}>
-                    <Text size="xs" c="dimmed" fw={500}>Location</Text>
-                    <Text size="sm">{listingData.location?.display || listingData.zipCode}</Text>
-                  </Stack>
-                </Grid.Col>
-              )}
+              {(listingData.location || listingData.zipCode) && (() => {
+                const loc = listingData.location;
+                const locationDisplay = loc?.display
+                  || [loc?.city, loc?.country].filter(Boolean).join(', ')
+                  || listingData.zipCode;
+                return locationDisplay ? (
+                  <Grid.Col span={{ base: 12, sm: 6 }}>
+                    <Stack gap={2}>
+                      <Text size="xs" c="dimmed" fw={500}>Location</Text>
+                      <Text size="sm">{locationDisplay}</Text>
+                    </Stack>
+                  </Grid.Col>
+                ) : null;
+              })()}
               {typeLabel && (
                 <Grid.Col span={{ base: 12, sm: 6 }}>
                   <Stack gap={2}>

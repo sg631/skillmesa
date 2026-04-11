@@ -31,6 +31,7 @@ function ListingComponent({ id }) {
   const [online, setOnline]           = useState(null);
   const [location, setLocation]       = useState(null);
   const [zipCode, setZipCode]         = useState("");
+  const [editors, setEditors]         = useState([]);
   const [archived, setArchived]       = useState(false);
   const [rating, setRating]           = useState(null);
   const [reviewCount, setReviewCount] = useState(0);
@@ -55,6 +56,7 @@ function ListingComponent({ id }) {
           setOnline(data.online);
           setLocation(data.location || null);
           setZipCode(data.zipCode || "");
+          setEditors(data.editors || []);
           setArchived(data.archived || false);
           setRating(data.rating ?? null);
           setReviewCount(data.reviewCount ?? 0);
@@ -87,7 +89,8 @@ function ListingComponent({ id }) {
     fetchOwner();
   }, [ownerUID]);
 
-  const isOwner = Boolean(currentUser && ownerUID && currentUser.uid === ownerUID);
+  const isOwner  = Boolean(currentUser && ownerUID && currentUser.uid === ownerUID);
+  const isEditor = Boolean(currentUser && !isOwner && editors.includes(currentUser.uid));
 
   const typeClass  = type === "service" ? "banner-service" : "banner-class";
   const modalClass = online ? "banner-online" : "banner-offline";
@@ -196,11 +199,14 @@ function ListingComponent({ id }) {
             <Text size="xs" c="dimmed" truncate>{ownerName}</Text>
           </Group>
 
+          {isEditor && (
+            <Badge size="xs" variant="light" color="violet" mb={2}>Editor</Badge>
+          )}
           <Group gap="xs">
             <Button component={Link} to={`/listing/${id}`} variant="default" size="xs" style={{ flex: 1 }}>
               View
             </Button>
-            {isOwner && (
+            {(isOwner || isEditor) && (
               <Button component={Link} to={`/manage/${id}`} variant="default" size="xs">
                 Manage
               </Button>
