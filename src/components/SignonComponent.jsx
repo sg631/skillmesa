@@ -1,5 +1,7 @@
 import React from "react";
 import { Paper, Tabs, TextInput, PasswordInput, Button, Title, Stack } from "@mantine/core";
+import { DatePickerInput } from "@mantine/dates";
+import "@mantine/dates/styles.css";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth, db } from "../firebase.js";
 import { doc, setDoc } from "firebase/firestore";
@@ -13,7 +15,7 @@ function SignonComponent({ mode = "dual", width, height }) {
     email: "",
     password: "",
     displayName: "",
-    dob: "",
+    dob: null,
   });
   const [loginData, setLoginData] = React.useState({
     email: "",
@@ -52,7 +54,7 @@ function SignonComponent({ mode = "dual", width, height }) {
           svgDataUrl: svgDataUrl,
           currentUrl: svgDataUrl,
         },
-        dob: new Date(signUpData.dob) || null,
+        dob: signUpData.dob || null,
         displayName: signUpData.displayName || signUpData.username,
         contact: {
           email: signUpData.email,
@@ -166,11 +168,13 @@ function SignonComponent({ mode = "dual", width, height }) {
                 value={signUpData.username}
                 onChange={(e) => setSignUpData({ ...signUpData, username: e.target.value })}
               />
-              <TextInput
-                type="date"
+              <DatePickerInput
                 label="Birthday"
+                placeholder="Pick a date"
                 value={signUpData.dob}
-                onChange={(e) => setSignUpData({ ...signUpData, dob: e.target.value })}
+                onChange={(val) => setSignUpData({ ...signUpData, dob: val })}
+                maxDate={new Date()}
+                clearable
               />
               <TextInput
                 type="email"

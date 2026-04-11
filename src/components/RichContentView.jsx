@@ -4,11 +4,14 @@ import { RichTextPlugin } from "@lexical/react/LexicalRichTextPlugin";
 import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { ListNode, ListItemNode } from "@lexical/list";
 import { LinkNode } from "@lexical/link";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ImageNode } from "./ImageNode.jsx";
+import { ButtonNode } from "./ButtonNode.jsx";
+import { FileRefNode } from "./FileRefNode.jsx";
 
 function StateLoader({ content }) {
   const [editor] = useLexicalComposerContext();
@@ -38,7 +41,7 @@ export default function RichContentView({ content }) {
     namespace: "RichContentView",
     editable: false,
     theme: { paragraph: "editor-paragraph" },
-    nodes: [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, ImageNode],
+    nodes: [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, ImageNode, ButtonNode, FileRefNode],
     onError(e) { console.error("RichContentView error:", e); },
   };
 
@@ -49,6 +52,7 @@ export default function RichContentView({ content }) {
         <RichTextPlugin
           contentEditable={<ContentEditable className="editor-input" style={{ minHeight: 'unset', padding: 0 }} />}
           placeholder={null}
+          ErrorBoundary={LexicalErrorBoundary}
         />
         <ListPlugin />
         <LinkPlugin />

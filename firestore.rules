@@ -90,6 +90,13 @@ service cloud.firestore {
         allow create, update, delete: if isListingManager(listingId);
       }
 
+      // ── Locked resource page ─────────────────────────────────────────────────
+      match /lockedPage/{docId} {
+        // Enrolled users and managers can read; only managers can write.
+        allow read: if isListingManager(listingId) || isEnrolled(listingId);
+        allow write: if isListingManager(listingId);
+      }
+
       // ── Enrollments ──────────────────────────────────────────────────────────
       match /enrollments/{enrolledUserId} {
         // The enrolled user can read their own enrollment doc.

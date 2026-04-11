@@ -5,6 +5,8 @@ import {
   useMantineColorScheme, useComputedColorScheme, Center, SegmentedControl,
   UnstyledButton, Switch,
 } from '@mantine/core';
+import { DatePickerInput } from "@mantine/dates";
+import "@mantine/dates/styles.css";
 import { Sun, Moon, Upload, Palette, User, Image, Lock, Shield } from 'lucide-react';
 import { onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider, updateProfile } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -46,7 +48,7 @@ function SettingsPage() {
   const [bio, setBio]                       = React.useState('');
   const [email, setEmail]                   = React.useState('');
   const [phone, setPhone]                   = React.useState('');
-  const [birthday, setBirthday]             = React.useState('');
+  const [birthday, setBirthday]             = React.useState(null);
   const [profilePicUrl, setProfilePicUrl]   = React.useState('');
 
   // Password fields
@@ -99,7 +101,7 @@ function SettingsPage() {
             setBio(d.bio || '');
             setEmail(d.contact?.email || '');
             setPhone(d.contact?.phone || '');
-            setBirthday(d.birthday || '');
+            setBirthday(d.birthday ? (d.birthday.toDate ? d.birthday.toDate() : new Date(d.birthday)) : null);
             setProfilePicUrl(d.profilePic?.currentUrl || '');
             setProfileVisibility(d.privacy?.profileVisibility || 'public');
             setAllowDirectMessages(d.privacy?.allowDirectMessages || 'everyone');
@@ -298,11 +300,13 @@ function SettingsPage() {
                   minRows={3}
                   autosize
                 />
-                <TextInput
-                  type="date"
+                <DatePickerInput
                   label="Birthday"
+                  placeholder="Pick a date"
                   value={birthday}
-                  onChange={(e) => setBirthday(e.target.value)}
+                  onChange={setBirthday}
+                  maxDate={new Date()}
+                  clearable
                 />
                 <Divider label="Contact Info" labelPosition="left" />
                 <TextInput

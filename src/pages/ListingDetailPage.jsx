@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, getDoc, setDoc, updateDoc, arrayRemove, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, arrayRemove, serverTimestamp, collection, query, getDocs, orderBy } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { LinkButton } from "../components/LinkElements";
 import {
@@ -21,6 +21,7 @@ function ListingDetailPage() {
   const [loading, setLoading]         = useState(true);
   const [shareOpen, setShareOpen]     = useState(false);
   const [isEnrolled, setIsEnrolled]   = useState(false);
+  const [lockedContent, setLockedContent] = useState(null);
   const user = auth.currentUser;
 
   useEffect(() => {
@@ -44,7 +45,14 @@ function ListingDetailPage() {
         }
         if (user) {
           const enrollSnap = await getDoc(doc(db, "listings", listingSnap.id, "enrollments", user.uid));
-          if (isMounted) setIsEnrolled(enrollSnap.exists());
+          const enrolled = enrollSnap.exists();
+          if (isMounted) setIsEnrolled(enrolled);
+
+          const isManager = user.uid === listing.owner || (listing.editors || []).includes(user.uid);
+          if (enrolled || isManager) {
+            const lockedSnap = await getDoc(doc(db, "listings", listingSnap.id, "lockedPage", "main"));
+            if (isMounted) setLockedContent(lockedSnap.exists() ? (lockedSnap.data().content || '') : '');
+          }
         }
       } catch (err) {
         console.error("Error fetching listing:", err);
@@ -154,6 +162,9 @@ function ListingDetailPage() {
               <Tabs.List>
                 <Tabs.Tab value="details">Details</Tabs.Tab>
                 <Tabs.Tab value="files">Files</Tabs.Tab>
+                {lockedContent !== null && (
+                  <Tabs.Tab value="resources">Resources</Tabs.Tab>
+                )}
                 <Tabs.Tab value="image-editor" disabled>
                   <Text size="xs" c="dimmed">Image Editor <Badge size="xs" variant="light" color="gray" ml={4}>Soon</Badge></Text>
                 </Tabs.Tab>
@@ -179,6 +190,16 @@ function ListingDetailPage() {
                   isEnrolled={isEnrolled}
                 />
               </Tabs.Panel>
+
+              {lockedContent !== null && (
+                <Tabs.Panel value="resources" pt="md">
+                  {lockedContent ? (
+                    <RichContentView content={lockedContent} />
+                  ) : (
+                    <Text size="sm" c="dimmed">No resources have been added yet.</Text>
+                  )}
+                </Tabs.Panel>
+              )}
             </Tabs>
 
             <Divider />
@@ -360,9 +381,6 @@ function ListingDetailPage() {
                     Manage
                   </LinkButton>
                 )}
-                <Button variant="subtle" color="gray" fullWidth disabled>
-                  Resource Page (Coming Soon)
-                </Button>
               </Stack>
             </Stack>
           </Paper>
