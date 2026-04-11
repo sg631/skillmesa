@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://skillmesa.com/sitemap.xml
+Sitemap: https://skillmesa.com/sitemap-dynamic.xml

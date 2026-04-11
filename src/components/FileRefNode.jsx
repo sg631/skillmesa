@@ -1,12 +1,16 @@
 import { DecoratorNode } from "lexical";
-import React, { useState } from "react";
-import FilePreviewModal from "./FilePreviewModal.jsx";
+import React, { useState, lazy, Suspense } from "react";
 
-// ── FileRefDisplay: a real React component so it can use hooks ────────
+// Lazy-load the preview modal so Mantine/lucide don't participate in
+// Lexical's node module graph, preventing evaluation-order issues in Vite.
+const FilePreviewModal = lazy(() => import("./FilePreviewModal.jsx"));
+
+// ── FileRefDisplay: real React component so it can hold modal state ───
 function FileRefDisplay({ fileName, fileUrl, privacy }) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const isLocked = privacy === "enroll" || privacy === "managers";
+  const file = fileUrl ? { name: fileName, url: fileUrl } : null;
 
   const containerStyle = {
     display: "inline-flex",
@@ -19,12 +23,10 @@ function FileRefDisplay({ fileName, fileUrl, privacy }) {
     fontSize: 13,
     color: "inherit",
     textDecoration: "none",
-    cursor: "pointer",
+    cursor: fileUrl ? "pointer" : "default",
     maxWidth: "100%",
     userSelect: "none",
   };
-
-  const file = fileUrl ? { name: fileName, url: fileUrl } : null;
 
   function handleClick(e) {
     e.preventDefault();
@@ -33,22 +35,30 @@ function FileRefDisplay({ fileName, fileUrl, privacy }) {
 
   return (
     <>
-      <span style={containerStyle} onClick={handleClick} role="button" tabIndex={0}
-        onKeyDown={e => e.key === 'Enter' && handleClick(e)}>
+      <span
+        style={containerStyle}
+        onClick={handleClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={e => e.key === "Enter" && handleClick(e)}
+      >
         <FileDocIcon />
         <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {fileName}
         </span>
         {isLocked ? <LockIcon /> : <GlobeIcon />}
       </span>
-      {file && (
-        <FilePreviewModal file={previewOpen ? file : null} onClose={() => setPreviewOpen(false)} />
+
+      {file && previewOpen && (
+        <Suspense fallback={null}>
+          <FilePreviewModal file={file} onClose={() => setPreviewOpen(false)} />
+        </Suspense>
       )}
     </>
   );
 }
 
-// Inline SVGs to avoid external import issues inside Lexical decorators
+// Inline SVGs — no external imports inside the Lexical node module graph
 function FileDocIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.7 }}>
@@ -86,8 +96,8 @@ export class FileRefNode extends DecoratorNode {
   constructor(fileName, fileUrl, privacy, key) {
     super(key);
     this.__fileName = fileName || "File";
-    this.__fileUrl = fileUrl || "";
-    this.__privacy = privacy || "public";
+    this.__fileUrl  = fileUrl  || "";
+    this.__privacy  = privacy  || "public";
   }
 
   static getType() { return "fileref"; }
@@ -97,8 +107,7 @@ export class FileRefNode extends DecoratorNode {
   }
 
   createDOM() {
-    const span = document.createElement("span");
-    return span;
+    return document.createElement("span");
   }
 
   updateDOM() { return false; }

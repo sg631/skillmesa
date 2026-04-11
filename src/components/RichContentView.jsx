@@ -13,6 +13,9 @@ import { ImageNode } from "./ImageNode.jsx";
 import { ButtonNode } from "./ButtonNode.jsx";
 import { FileRefNode } from "./FileRefNode.jsx";
 
+// Defined at module level so the array reference is stable across renders and HMR cycles
+const VIEWER_NODES = [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, ImageNode, ButtonNode, FileRefNode];
+
 function StateLoader({ content }) {
   const [editor] = useLexicalComposerContext();
   const loaded = useRef(false);
@@ -41,7 +44,7 @@ export default function RichContentView({ content }) {
     namespace: "RichContentView",
     editable: false,
     theme: { paragraph: "editor-paragraph" },
-    nodes: [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, ImageNode, ButtonNode, FileRefNode],
+    nodes: VIEWER_NODES,
     onError(e) { console.error("RichContentView error:", e); },
   };
 
