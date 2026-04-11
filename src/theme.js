@@ -136,6 +136,14 @@ const theme = createTheme({
       },
     },
 
+    // ─── Avatar ───────────────────────────────────────────────────────────────
+    // Solid background so transparent PNGs don't bleed into the page background.
+    Avatar: {
+      styles: {
+        root: { background: '#d8ffff' },
+      },
+    },
+
     // ─── Surface components ───────────────────────────────────────────────────
     Card:       { defaultProps: { radius: 'md', shadow: 'xs', withBorder: true } },
     Paper:      { defaultProps: { radius: 'md' } },
