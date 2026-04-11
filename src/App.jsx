@@ -27,12 +27,13 @@ import CreateGroupPage from './pages/CreateGroupPage.jsx';
 import { LinkImage } from './components/LinkElements';
 import PageTransition from './components/PageTransition';
 import { onAuthStateChanged } from 'firebase/auth';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { auth, db } from "./firebase.js";
 import { Bell, Settings, UserCircle, Sun, Moon } from 'lucide-react';
 
 function App() {
   const [user, setUser] = React.useState(undefined);
+  const [profilePicUrl, setProfilePicUrl] = React.useState(null);
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const { setColorScheme } = useMantineColorScheme();
@@ -42,9 +43,19 @@ function App() {
   React.useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (u) => {
       setUser(u || null);
+      if (!u) setProfilePicUrl(null);
     });
     return unsubAuth;
   }, []);
+
+  // Keep navbar avatar in sync with Firestore profile picture
+  React.useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
+      setProfilePicUrl(snap.exists() ? (snap.data().profilePic?.currentUrl || null) : null);
+    });
+    return () => unsub();
+  }, [user?.uid]);
 
   // Track unread notifications count
   React.useEffect(() => {
@@ -103,7 +114,7 @@ function App() {
             <Box visibleFrom="sm">
               {user ? (
                 <Link to="/profile">
-                  <Avatar src={user.photoURL} size={32} radius="xl" />
+                  <Avatar src={profilePicUrl} size={32} radius="xl" />
                 </Link>
               ) : (
                 <ActionIcon component={Link} to="/signon" variant="subtle" color="gray" size="lg" aria-label="Sign In">
@@ -154,7 +165,7 @@ function App() {
                   gap="sm"
                   style={{ textDecoration: 'none', color: 'inherit', padding: '4px 0' }}
                 >
-                  <Avatar src={user.photoURL} size={40} radius="xl" />
+                  <Avatar src={profilePicUrl} size={40} radius="xl" />
                   <Box>
                     <Text fw={600} size="sm">{user.displayName || 'Profile'}</Text>
                     <Text size="xs" c="dimmed">{user.email}</Text>
