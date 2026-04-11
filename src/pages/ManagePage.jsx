@@ -117,6 +117,11 @@ function ManagePage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting]     = useState(false);
 
+  // Locked resource page
+  const [lockedContent, setLockedContent] = useState("");
+  const [lockedSaving, setLockedSaving]   = useState(false);
+  const [listingFiles, setListingFiles]   = useState([]);
+
   // Group membership (for group-owned listings)
   const [isGroupMember, setIsGroupMember] = useState(false);
 
@@ -162,6 +167,22 @@ function ManagePage() {
   }, [listingId]);
 
   useEffect(() => { if (listingId) loadEnrollments(); }, [listingId]);
+
+  // Fetch locked content
+  useEffect(() => {
+    if (!listingId) return;
+    getDoc(doc(db, 'listings', listingId, 'lockedPage', 'main'))
+      .then(snap => { if (snap.exists()) setLockedContent(snap.data().content || ''); })
+      .catch(() => {});
+  }, [listingId]);
+
+  // Fetch listing files for file-ref picker in editor
+  useEffect(() => {
+    if (!listingId) return;
+    getDocs(query(collection(db, 'listings', listingId, 'files'), where('privacy', '!=', 'managers')))
+      .then(snap => setListingFiles(snap.docs.map(d => ({ id: d.id, ...d.data(), url: d.data().url || d.data().downloadUrl || '' }))))
+      .catch(() => {});
+  }, [listingId]);
 
   useEffect(() => {
     if (!user || !listingData?.ownerGroupId) return;
@@ -267,6 +288,19 @@ function ManagePage() {
       showAlert("Failed to save listing.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveLockedContent = async () => {
+    setLockedSaving(true);
+    try {
+      await setDoc(doc(db, 'listings', listingId, 'lockedPage', 'main'), { content: lockedContent }, { merge: true });
+      showAlert('Resources page saved!');
+    } catch (err) {
+      console.error('Failed to save locked content:', err);
+      showAlert('Failed to save resources page.');
+    } finally {
+      setLockedSaving(false);
     }
   };
 
@@ -549,6 +583,7 @@ function ManagePage() {
               <Tabs.List>
                 <Tabs.Tab value="details">Details</Tabs.Tab>
                 <Tabs.Tab value="files">Files</Tabs.Tab>
+                <Tabs.Tab value="resources">Resources</Tabs.Tab>
                 <Tabs.Tab value="image-editor" disabled>
                   <Text size="xs" c="dimmed">Image Editor <Badge size="xs" variant="light" color="gray" ml={4}>Soon</Badge></Text>
                 </Tabs.Tab>
@@ -560,7 +595,7 @@ function ManagePage() {
               <Tabs.Panel value="details" pt="md">
                 <Stack gap="xs">
                   <Text size="xs" c="dimmed">Rich text shown on the listing page — add details, schedules, requirements, etc.</Text>
-                  <TextEditor initialState={richContent} onChange={setRichContent} />
+                  <TextEditor initialState={richContent} onChange={setRichContent} listingFiles={listingFiles} />
                 </Stack>
               </Tabs.Panel>
 
@@ -571,6 +606,25 @@ function ManagePage() {
                   editors={editors}
                   editorMode={true}
                 />
+              </Tabs.Panel>
+
+              <Tabs.Panel value="resources" pt="md">
+                <Stack gap="sm">
+                  <Box>
+                    <Text fw={500} size="sm">Locked Resources Page</Text>
+                    <Text size="xs" c="dimmed">This page is only visible to enrolled users. Add materials, links, instructions, or file references.</Text>
+                  </Box>
+                  <TextEditor initialState={lockedContent} onChange={setLockedContent} listingFiles={listingFiles} />
+                  <Button
+                    variant="filled"
+                    size="sm"
+                    loading={lockedSaving}
+                    onClick={handleSaveLockedContent}
+                    style={{ alignSelf: 'flex-start' }}
+                  >
+                    Save resources page
+                  </Button>
+                </Stack>
               </Tabs.Panel>
             </Tabs>
 

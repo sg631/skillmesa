@@ -25,52 +25,56 @@ function StartingPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        minHeight: 'calc(100vh - 112px)',
         padding: '3rem 1rem',
       }}
+      mih={{ base: 0, sm: 'calc(100vh - 112px)' }}
     >
       <title>skillmesa</title>
-      <Stack align="center" gap="lg" maw={640} ta="center">
+      <Stack align="center" gap="lg" maw={640} ta="center" style={{ width: '100%' }}>
         <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: '0.08em' }}>
           Peer-to-peer skills marketplace
         </Text>
 
         <Stack align="center" gap="xs">
-          <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700}>
+          <Title order={1} fz={{ base: '2rem', xs: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700}>
             Find skills in
           </Title>
           <CarouselElement>
             <li>
-              <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
+              <Title order={1} fz={{ base: '2rem', xs: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
                 background: 'linear-gradient(to right, #9866f0, #75e4f8)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                minWidth: '4ch',
               }}>coding</Title>
             </li>
             <li>
-              <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
+              <Title order={1} fz={{ base: '2rem', xs: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
                 background: 'linear-gradient(to right, #f96fad, #fcc361)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                minWidth: '4ch',
               }}>design</Title>
             </li>
             <li>
-              <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
+              <Title order={1} fz={{ base: '2rem', xs: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
                 background: 'linear-gradient(to right, #39e4ae, #73a1ec)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                minWidth: '4ch',
               }}>writing</Title>
             </li>
             <li>
-              <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
+              <Title order={1} fz={{ base: '2rem', xs: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700} style={{
                 background: 'linear-gradient(to right, #ff8d50, #bf86f4)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                minWidth: '4ch',
               }}>music</Title>
             </li>
           </CarouselElement>
-          <Title order={1} fz={{ base: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700}>
+          <Title order={1} fz={{ base: '2rem', xs: '2.5rem', sm: '3.5rem' }} lh={1.15} fw={700}>
             and more
           </Title>
         </Stack>
 
-        <Text size="lg" c="dimmed" maw={480}>
+        <Text size={{ base: 'md', sm: 'lg' }} c="dimmed" maw={480} px="sm">
           From babysitting to SAT prep, from lawn care to tutoring — connect with people in your community.
         </Text>
 

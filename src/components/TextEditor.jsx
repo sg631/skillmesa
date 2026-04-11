@@ -5,11 +5,14 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { ListNode, ListItemNode } from "@lexical/list";
 import { LinkNode } from "@lexical/link";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ImageNode } from "./ImageNode.jsx";
+import { ButtonNode } from "./ButtonNode.jsx";
+import { FileRefNode } from "./FileRefNode.jsx";
 import TextEditorToolbar from "./TextEditorToolbar.jsx";
 
 /**
@@ -17,7 +20,7 @@ import TextEditorToolbar from "./TextEditorToolbar.jsx";
  *  - initialState: optional serialized editor state JSON string (as saved)
  *  - onChange: optional callback(serializedString) whenever editor updates
  */
-export default function TextEditor({ initialState = "", onChange }) {
+export default function TextEditor({ initialState = "", onChange, listingFiles = [] }) {
   const editorRef = useRef(null);
 
   const editorConfig = {
@@ -26,18 +29,19 @@ export default function TextEditor({ initialState = "", onChange }) {
     onError(error) {
       console.error("Lexical error:", error);
     },
-    nodes: [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, ImageNode],
+    nodes: [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, ImageNode, ButtonNode, FileRefNode],
   };
 
   return (
     <div className="text-editor">
       <LexicalComposer initialConfig={editorConfig}>
         <EditorInitializer initialState={initialState} editorRef={editorRef} />
-        <TextEditorToolbar />
+        <TextEditorToolbar listingFiles={listingFiles} />
         <div className="editor-container">
           <RichTextPlugin
             contentEditable={<ContentEditable className="editor-input" />}
             placeholder={<div className="editor-placeholder">Start typing...</div>}
+            ErrorBoundary={LexicalErrorBoundary}
           />
           <HistoryPlugin />
           <ListPlugin />

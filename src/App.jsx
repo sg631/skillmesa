@@ -264,16 +264,16 @@ function App() {
           component="footer"
           style={{
             width: '100%',
-            height: 52,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
+            padding: '14px 16px',
             background: footerBg,
             borderTop: `1px solid ${navBorder}`,
           }}
         >
-          <Text size="xs" c="dimmed">
-            Skillmesa is currently in development. Stay tuned for updates!
+          <Text size="xs" c="dimmed" ta="center">
+            Skillmesa — currently in development
           </Text>
         </Box>
       </Box>
