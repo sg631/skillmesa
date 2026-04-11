@@ -6,7 +6,7 @@ import {
   UnstyledButton, Switch,
 } from '@mantine/core';
 import { Sun, Moon, Upload, Palette, User, Image, Lock, Shield } from 'lucide-react';
-import { onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider, updateProfile } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage } from '../firebase';
@@ -142,6 +142,7 @@ function SettingsPage() {
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       await updateDoc(doc(db, 'users', user.uid), { 'profilePic.currentUrl': url });
+      await updateProfile(auth.currentUser, { photoURL: url });
       setProfilePicUrl(url);
       showAlert('Profile picture updated!');
     } catch (err) {

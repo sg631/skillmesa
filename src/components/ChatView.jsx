@@ -259,6 +259,7 @@ export default function ChatView({ chatId: chatIdProp, otherUID, showBackButton 
 
   // For inquiry chats: check if the other participant is enrolled (manager view only)
   const isListingManager = chatType === 'inquiry' && listingData && currentUser
+    && currentUser.uid !== chatData?.initiatedBy
     && (currentUser.uid === listingData.owner || (listingData.editors || []).includes(currentUser.uid));
 
   useEffect(() => {

@@ -321,12 +321,12 @@ function EnrolledSection({ userId }) {
 
   React.useEffect(() => {
     if (!userId) return;
-    getDocs(
-      query(collectionGroup(db, 'enrollments'), where('userId', '==', userId))
-    )
-      .then(snap => setEnrollments(snap.docs.map(d => d.data())))
-      .catch(err => console.error('enrollments query:', err))
-      .finally(() => setLoading(false));
+    const unsub = onSnapshot(
+      query(collectionGroup(db, 'enrollments'), where('userId', '==', userId)),
+      (snap) => { setEnrollments(snap.docs.map(d => d.data())); setLoading(false); },
+      (err) => { console.error('enrollments query:', err); setLoading(false); }
+    );
+    return () => unsub();
   }, [userId]);
 
   if (loading) {
