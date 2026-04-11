@@ -4,6 +4,7 @@ import { LinkButton } from '../components/LinkElements.jsx';
 import CarouselElement from '../components/CarouselElement.jsx';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from "../firebase";
+import useSEO from '../hooks/useSEO';
 
 function StartingPage() {
   const [user, setUser] = React.useState(null);
@@ -19,6 +20,8 @@ function StartingPage() {
 
   const getStartedLink = checkedAuth ? (user ? "/home" : "/signon") : "/signon";
 
+  useSEO({ path: '/' });
+
   return (
     <Box
       style={{
@@ -29,7 +32,6 @@ function StartingPage() {
       }}
       mih={{ base: 0, sm: 'calc(100vh - 112px)' }}
     >
-      <title>skillmesa</title>
       <Stack align="center" gap="lg" maw={640} ta="center" style={{ width: '100%' }}>
         <Text size="xs" fw={600} tt="uppercase" c="dimmed" style={{ letterSpacing: '0.08em' }}>
           Peer-to-peer skills marketplace

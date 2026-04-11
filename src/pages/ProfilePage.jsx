@@ -1,5 +1,6 @@
 import React from "react";
 import { useParams } from "react-router-dom";
+import useSEO from '../hooks/useSEO';
 import { doc, getDoc, collection, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import { LinkButton } from "../components/LinkElements.jsx";
@@ -30,6 +31,15 @@ function ProfilePage() {
   const [profileData, setProfileData] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
 
+  const displayName = profileData?.displayName || "Unnamed User";
+  useSEO({
+    title: profileData ? `${displayName}'s Profile` : undefined,
+    description: profileData
+      ? `View ${displayName}'s services and classes on Skillmesa.`
+      : undefined,
+    path: userUIDparam ? `/profile/${userUIDparam}` : undefined,
+  });
+
   React.useEffect(() => {
     let isMounted = true;
 
@@ -49,7 +59,6 @@ function ProfilePage() {
   if (loading) {
     return (
       <Stack align="center" py="xl">
-        <title>Skillmesa | Loading...</title>
         <Loader color="gray" />
         <Text c="dimmed">Loading profile...</Text>
       </Stack>
@@ -59,19 +68,16 @@ function ProfilePage() {
   if (!profileData) {
     return (
       <Stack align="center" py="xl">
-        <title>Skillmesa | Not Found</title>
         <Title order={1}>User not found</Title>
         <Text c="dimmed">The profile you're looking for doesn't exist.</Text>
       </Stack>
     );
   }
 
-  const displayName = profileData.displayName || "Unnamed User";
   const ownerQuery = listingsByOwnerQuery(userUIDparam);
 
   return (
     <Stack align="center" gap="md" py="xl">
-      <title>profile | skillmesa</title>
       <Title order={1}>{displayName}</Title>
 
       <Text size="sm" c="dimmed">You may know them as</Text>

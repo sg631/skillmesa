@@ -1,5 +1,6 @@
 import React from 'react';
 import { Title, Text, Button, Group, Paper, Stack, Select, Pill, PillsInput, Divider, SimpleGrid, Loader } from '@mantine/core';
+import useSEO from '../hooks/useSEO';
 import { LocateFixed, LocateOff } from 'lucide-react';
 import {
   InstantSearch,
@@ -184,6 +185,12 @@ const RADIUS_OPTIONS = [
 ];
 
 function ExplorePage() {
+  useSEO({
+    title: 'Explore',
+    description: 'Browse services and classes near you — tutoring, babysitting, lawn care, coding help, music lessons, and more on Skillmesa.',
+    path: '/explore',
+  });
+
   const [advancedOpen, setAdvancedOpen] = React.useState(false);
   const [geoCoords, setGeoCoords]       = React.useState(null);   // { lat, lng }
   const [geoRadius, setGeoRadius]       = React.useState('25000');
@@ -191,7 +198,7 @@ function ExplorePage() {
   const [geoError, setGeoError]         = React.useState(null);
 
   React.useEffect(() => {
-    document.title = 'Explore | skillmesa';
+    document.title = 'explore | skillmesa';
   }, []);
 
   function toggleNearMe() {

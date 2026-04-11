@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import useSEO from '../hooks/useSEO';
 import { doc, getDoc, setDoc, updateDoc, arrayRemove, serverTimestamp, collection, query, getDocs, orderBy } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { LinkButton } from "../components/LinkElements";
@@ -23,6 +24,51 @@ function ListingDetailPage() {
   const [isEnrolled, setIsEnrolled]   = useState(false);
   const [lockedContent, setLockedContent] = useState(null);
   const user = auth.currentUser;
+
+  // Build JSON-LD once listing data is available
+  const jsonLd = useMemo(() => {
+    if (!listingData) return null;
+    const ownerName = ownerData?.displayName || undefined;
+    const locationDisplay =
+      listingData.location?.display ||
+      [listingData.location?.city, listingData.location?.country].filter(Boolean).join(', ') ||
+      (listingData.online ? 'Online' : undefined);
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'Service',
+      name: listingData.title,
+      description: listingData.description || undefined,
+      serviceType: listingData.category || listingData.type || undefined,
+      url: `https://skillmesa.app/listing/${listingData.id}`,
+      ...(listingData.thumbnailURL ? { image: listingData.thumbnailURL } : {}),
+      ...(ownerName ? {
+        provider: {
+          '@type': 'Person',
+          name: ownerName,
+          url: `https://skillmesa.app/profile/${listingData.owner}`,
+        },
+      } : {}),
+      ...(listingData.price ? {
+        offers: {
+          '@type': 'Offer',
+          price: parseFloat(listingData.price).toFixed(2),
+          priceCurrency: 'USD',
+        },
+      } : {}),
+      ...(locationDisplay ? { areaServed: locationDisplay } : {}),
+    };
+    return schema;
+  }, [listingData, ownerData]);
+
+  useSEO({
+    title: listingData?.title ?? undefined,
+    description: listingData?.description
+      ? listingData.description.slice(0, 160)
+      : undefined,
+    image: listingData?.thumbnailURL ?? undefined,
+    path: listingId ? `/listing/${listingId}` : undefined,
+    jsonLd,
+  });
 
   useEffect(() => {
     if (!listingId) return;
@@ -106,8 +152,6 @@ function ListingDetailPage() {
 
   return (
     <Stack gap={0} py="xl" px={{ base: 'md', sm: 'xl' }} maw={1200} mx="auto" className="page-enter">
-      <title>view listing | skillmesa</title>
-
       {/* Back row */}
       <Group gap="xs" mb="lg">
         <ActionIcon variant="subtle" color="gray" size="sm" onClick={() => navigate(-1)}>

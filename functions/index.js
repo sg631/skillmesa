@@ -1,4 +1,5 @@
 import { onDocumentCreated, onDocumentUpdated, onDocumentDeleted } from "firebase-functions/v2/firestore";
+import { onRequest } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
@@ -132,6 +133,60 @@ export const onListingDeleted = onDocumentDeleted(
     const client = getAlgoliaClient();
     await client.deleteObject({ indexName: ALGOLIA_INDEX, objectID: docId });
     console.log(`Deleted listing ${docId} from Algolia`);
+  }
+);
+
+// ── Dynamic sitemap ───────────────────────────────────────────────────
+// Served via Firebase Hosting rewrite at /sitemap-dynamic.xml
+// Crawls non-archived listings and public user profiles from Firestore.
+export const sitemapDynamic = onRequest(
+  { cors: false, invoker: "public" },
+  async (req, res) => {
+    const BASE = "https://skillmesa.com";
+
+    try {
+      // Fetch all non-archived listings
+      const listingsSnap = await db
+        .collection("listings")
+        .where("archived", "!=", true)
+        .get();
+
+      // Fetch all users (for profile pages)
+      const usersSnap = await db.collection("users").get();
+
+      const now = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+      const listingUrls = listingsSnap.docs.map((d) => {
+        const data = d.data();
+        const lastmod = data.updatedAt
+          ? new Date(data.updatedAt).toISOString().split("T")[0]
+          : now;
+        return `  <url>
+    <loc>${BASE}/listing/${d.id}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+      });
+
+      const profileUrls = usersSnap.docs.map((d) => `  <url>
+    <loc>${BASE}/profile/${d.id}</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>`);
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${[...listingUrls, ...profileUrls].join("\n")}
+</urlset>`;
+
+      res.set("Content-Type", "application/xml");
+      res.set("Cache-Control", "public, max-age=3600, s-maxage=3600");
+      res.status(200).send(xml);
+    } catch (err) {
+      console.error("sitemapDynamic error:", err);
+      res.status(500).send("Failed to generate sitemap");
+    }
   }
 );
 

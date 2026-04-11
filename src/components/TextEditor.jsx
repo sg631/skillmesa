@@ -15,6 +15,9 @@ import { ButtonNode } from "./ButtonNode.jsx";
 import { FileRefNode } from "./FileRefNode.jsx";
 import TextEditorToolbar from "./TextEditorToolbar.jsx";
 
+// Defined at module level so the array reference is stable across renders and HMR cycles
+const EDITOR_NODES = [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, ImageNode, ButtonNode, FileRefNode];
+
 /**
  * Props:
  *  - initialState: optional serialized editor state JSON string (as saved)
@@ -29,7 +32,7 @@ export default function TextEditor({ initialState = "", onChange, listingFiles =
     onError(error) {
       console.error("Lexical error:", error);
     },
-    nodes: [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, ImageNode, ButtonNode, FileRefNode],
+    nodes: EDITOR_NODES,
   };
 
   return (

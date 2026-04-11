@@ -17,6 +17,10 @@
     ],
     "rewrites": [
       {
+        "source": "/sitemap-dynamic.xml",
+        "function": "sitemapDynamic"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }

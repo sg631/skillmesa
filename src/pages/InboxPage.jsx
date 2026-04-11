@@ -228,6 +228,8 @@ export default function InboxPage() {
 
   const sidebarBorder = `1px solid var(--mantine-color-default-border)`;
 
+  React.useEffect(() => { document.title = 'inbox | skillmesa'; }, []);
+
   React.useEffect(() => {
     if (!currentUser) return;
     const q = query(
