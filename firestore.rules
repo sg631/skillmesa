@@ -168,6 +168,13 @@ service cloud.firestore {
       allow create: if signedIn();
     }
 
+    // ── Enrollment collection group (for dashboard query) ─────────────────────
+    // Allows collectionGroup('enrollments').where('userId','==', uid) in HomePage.
+    // The doc ID equals the enrolled user's UID, so uid() == enrolledUserId is safe.
+    match /{path=**}/enrollments/{enrolledUserId} {
+      allow read: if signedIn() && uid() == enrolledUserId;
+    }
+
     // ── Groups ────────────────────────────────────────────────────────────────
     match /groups/{groupId} {
       allow read: if true;
