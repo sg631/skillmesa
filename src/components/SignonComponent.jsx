@@ -65,7 +65,7 @@ function SignonComponent({ mode = "dual", width, height }) {
         photoURL: svgDataUrl,
       });
 
-      window.location.href = "/home";
+      window.location.href = "/onboarding";
     } catch (error) {
       let errorMessage = "Unexpected Error " + error.code + ": " + error.message;
       switch (error.code) {
