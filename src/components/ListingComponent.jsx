@@ -29,6 +29,7 @@ function ListingComponent({ id }) {
   const [thumbnailUrl, setThumbnailUrl] = useState("");
   const [type, setType]               = useState("");
   const [online, setOnline]           = useState(null);
+  const [location, setLocation]       = useState(null);
   const [zipCode, setZipCode]         = useState("");
   const [archived, setArchived]       = useState(false);
   const [rating, setRating]           = useState(null);
@@ -52,6 +53,7 @@ function ListingComponent({ id }) {
           setThumbnailUrl(data.thumbnailURL || "");
           setType(data.type || "");
           setOnline(data.online);
+          setLocation(data.location || null);
           setZipCode(data.zipCode || "");
           setArchived(data.archived || false);
           setRating(data.rating ?? null);
@@ -125,9 +127,8 @@ function ListingComponent({ id }) {
             Archived
           </Box>
         )}
-        {zipCode && (
+        {(location?.display || zipCode) && (
           <Box
-            className="banner-zip"
             style={{
               padding: '3px 12px',
               textAlign: 'center',
@@ -136,7 +137,9 @@ function ListingComponent({ id }) {
               borderBottom: '1px solid rgba(128,128,128,0.10)',
             }}
           >
-            {zipCode}
+            {location?.city
+              ? [location.city, location.country].filter(Boolean).join(', ')
+              : (location?.display || zipCode)}
           </Box>
         )}
       </Card.Section>

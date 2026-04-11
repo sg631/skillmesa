@@ -75,7 +75,7 @@ cd functions && ALGOLIA_ADMIN_KEY=<key> node scripts/backfill.js
 - [x] Chat messages
 - [x] Collaboration invites
 - [x] Enrollment events (notification sent to user when enrolled in a listing)
-- [ ] Listing comments/reviews
+- [x] Listing comments/reviews
 - [ ] Hook more systems (purchases, etc.)
 
 ### 5. AI Assistance
