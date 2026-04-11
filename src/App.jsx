@@ -23,6 +23,7 @@ import GroupsPage from './pages/GroupsPage.jsx';
 import GroupPage from './pages/GroupPage.jsx';
 import GroupManagePage from './pages/GroupManagePage.jsx';
 import CreateGroupPage from './pages/CreateGroupPage.jsx';
+import OnboardingPage from './pages/OnboardingPage.jsx';
 
 import { LinkImage } from './components/LinkElements';
 import PageTransition from './components/PageTransition';
@@ -229,6 +230,7 @@ function App() {
                 <Route path="*" element={<NotFoundPage />} />
                 <Route path="/" element={<StartingPage />} />
                 <Route path="/signon" element={<SignonPage />} />
+                <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/comingsoon" element={<ComingSoonPage />} />
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/profile/:userUIDparam" element={<ProfilePage />} />
