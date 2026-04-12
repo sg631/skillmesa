@@ -1,12 +1,13 @@
 import React, { useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { doc, getDoc, updateDoc, increment } from "firebase/firestore";
 import { db } from "../firebase";
 import { Center, Loader, Text, Stack } from "@mantine/core";
 
 function OpenSharedLinkPage() {
-  const { listingId } = useParams();
-  const navigate = useNavigate();
+  const { listingId }  = useParams();
+  const navigate       = useNavigate();
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     async function handleShareRedirect() {
@@ -21,7 +22,11 @@ function OpenSharedLinkPage() {
           return;
         }
 
-        await updateDoc(listingRef, { shares: increment(1) });
+        const src = searchParams.get('src') || 'direct';
+        await updateDoc(listingRef, {
+          shares: increment(1),
+          [`sources.${src}`]: increment(1),
+        });
         navigate(`/listing/${listingId}`, { replace: true });
       } catch (err) {
         console.error("Error updating shares or redirecting:", err);

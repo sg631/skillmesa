@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Navigate } from "react-router-dom";
-import { doc, getDoc, setDoc, deleteDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, limit, getDocs, addDoc, serverTimestamp, collectionGroup } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc, updateDoc, arrayUnion, arrayRemove, collection, query, where, limit, getDocs, addDoc, serverTimestamp, collectionGroup, increment } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, auth, storage } from "../firebase";
 import { LinkButton } from "../components/LinkElements";
@@ -392,11 +392,14 @@ function ManagePage() {
       });
       await addDoc(collection(db, 'notifications', targetUser.uid, 'items'), {
         type: 'enrolled',
+        title: 'New enrollment',
+        body: `You've been enrolled in "${title}"`,
         message: `You've been enrolled in "${title}"`,
         read: false,
         createdAt: serverTimestamp(),
         link: `/listing/${listingId}`,
       });
+      updateDoc(doc(db, 'listings', listingId), { enrollmentCount: increment(1) }).catch(() => {});
       setEnrollSearch('');
       setEnrollResults([]);
       await loadEnrollments();
@@ -411,6 +414,7 @@ function ManagePage() {
   async function revokeEnrollment(targetUid) {
     try {
       await deleteDoc(doc(db, 'listings', listingId, 'enrollments', targetUid));
+      updateDoc(doc(db, 'listings', listingId), { enrollmentCount: increment(-1) }).catch(() => {});
       setEnrollments(prev => prev.filter(e => e.id !== targetUid));
     } catch (err) {
       console.error(err);

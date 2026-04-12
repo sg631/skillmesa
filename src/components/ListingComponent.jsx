@@ -33,8 +33,9 @@ function ListingComponent({ id }) {
   const [zipCode, setZipCode]         = useState("");
   const [editors, setEditors]         = useState([]);
   const [archived, setArchived]       = useState(false);
-  const [rating, setRating]           = useState(null);
-  const [reviewCount, setReviewCount] = useState(0);
+  const [rating, setRating]             = useState(null);
+  const [reviewCount, setReviewCount]   = useState(0);
+  const [enrollmentCount, setEnrollmentCount] = useState(0);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setCurrentUser(u));
@@ -60,6 +61,7 @@ function ListingComponent({ id }) {
           setArchived(data.archived || false);
           setRating(data.rating ?? null);
           setReviewCount(data.reviewCount ?? 0);
+          setEnrollmentCount(data.enrollmentCount ?? 0);
         } else {
           setTitle("Listing not found");
         }
@@ -174,9 +176,17 @@ function ListingComponent({ id }) {
             {reviewCount > 0 && (
               <Text size="xs" c="dimmed">({reviewCount})</Text>
             )}
+            {enrollmentCount > 0 && (
+              <Text size="xs" c="dimmed">· {enrollmentCount} enrolled</Text>
+            )}
           </Group>
         ) : (
-          <Text size="xs" c="dimmed">Unrated</Text>
+          <Group gap={6} align="center">
+            <Text size="xs" c="dimmed">Unrated</Text>
+            {enrollmentCount > 0 && (
+              <Text size="xs" c="dimmed">· {enrollmentCount} enrolled</Text>
+            )}
+          </Group>
         )}
 
         <Box>

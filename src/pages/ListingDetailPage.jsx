@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import useSEO from '../hooks/useSEO';
-import { doc, getDoc, setDoc, updateDoc, arrayRemove, serverTimestamp, collection, query, getDocs, orderBy } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, arrayRemove, serverTimestamp, collection, query, getDocs, orderBy, increment } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import { LinkButton } from "../components/LinkElements";
 import {
   Title, Text, Button, Group, Stack, Avatar, Badge, Divider,
   Paper, ScrollArea, Image, Box, Grid, ActionIcon, Loader, Menu, Tabs,
 } from "@mantine/core";
-import { ArrowLeft, Share2, Mail, MessageSquare, ChevronDown } from "lucide-react";
+import { ArrowLeft, Share2, Mail, MessageSquare, ChevronDown, Eye, Users } from "lucide-react";
 import RichContentView from "../components/RichContentView";
 import ShareModal from "../components/ShareModal";
 import ListingFeedback from "../components/ListingFeedback";
@@ -84,6 +84,12 @@ function ListingDetailPage() {
         }
         const listing = { id: listingSnap.id, ...listingSnap.data() };
         if (isMounted) setListingData(listing);
+
+        // Count view — skip for listing managers to avoid inflating own stats
+        const isManager = user?.uid === listing.owner || (listing.editors || []).includes(user?.uid);
+        if (!isManager) {
+          updateDoc(doc(db, 'listings', listingId), { viewCount: increment(1) }).catch(() => {});
+        }
 
         if (listing.owner) {
           const ownerSnap = await getDoc(doc(db, "users", listing.owner));
@@ -334,6 +340,24 @@ function ListingDetailPage() {
               {/* Price */}
               {price && (
                 <Text size="xl" fw={700}>{price}</Text>
+              )}
+
+              {/* Stats row */}
+              {((listingData.viewCount > 0) || (listingData.enrollmentCount > 0)) && (
+                <Group gap="lg">
+                  {listingData.viewCount > 0 && (
+                    <Group gap={4}>
+                      <Eye size={13} style={{ opacity: 0.5 }} />
+                      <Text size="xs" c="dimmed">{listingData.viewCount.toLocaleString()} views</Text>
+                    </Group>
+                  )}
+                  {listingData.enrollmentCount > 0 && (
+                    <Group gap={4}>
+                      <Users size={13} style={{ opacity: 0.5 }} />
+                      <Text size="xs" c="dimmed">{listingData.enrollmentCount} enrolled</Text>
+                    </Group>
+                  )}
+                </Group>
               )}
 
               <Divider />

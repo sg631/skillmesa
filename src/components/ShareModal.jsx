@@ -32,6 +32,16 @@ function WhatsAppIcon({ size = 16 }) {
   );
 }
 
+function appendSrc(url, src) {
+  try {
+    const u = new URL(url);
+    u.searchParams.set('src', src);
+    return u.toString();
+  } catch {
+    return `${url}${url.includes('?') ? '&' : '?'}src=${src}`;
+  }
+}
+
 // Platform definitions
 const PLATFORMS = [
   {
@@ -155,7 +165,7 @@ export default function ShareModal({ opened, onClose, url, title }) {
             <Button
               key={platform.key}
               component="a"
-              href={platform.getUrl(url, title)}
+              href={platform.getUrl(appendSrc(url, platform.key), title)}
               target="_blank"
               rel="noopener noreferrer"
               variant="default"

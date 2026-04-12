@@ -49,9 +49,13 @@ service cloud.firestore {
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['rating', 'reviewCount']);
 
-      // Share-link click tracking: no auth required, only 'shares' field.
+      // Share-link click tracking: no auth required.
       allow update: if request.resource.data.diff(resource.data)
-        .affectedKeys().hasOnly(['shares']);
+        .affectedKeys().hasOnly(['shares', 'sources']);
+
+      // View count: no auth required, only 'viewCount' field.
+      allow update: if request.resource.data.diff(resource.data)
+        .affectedKeys().hasOnly(['viewCount']);
 
       // ── Reviews ──────────────────────────────────────────────────────────────
       match /reviews/{reviewId} {
