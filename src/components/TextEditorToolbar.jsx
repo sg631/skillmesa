@@ -91,7 +91,7 @@ export default function TextEditorToolbar({ listingFiles = [] }) {
     const file = listingFiles.find(f => f.id === selectedFile);
     if (!file) return;
     editor.update(() => {
-      const node = $createFileRefNode(file.name, file.url || file.downloadUrl || "", file.privacy || "public");
+      const node = $createFileRefNode(file.name, file.url || file.downloadUrl || "", file.mimeType || "", file.privacy || "public");
       $insertNodes([node]);
     });
     setFileModalOpen(false);
