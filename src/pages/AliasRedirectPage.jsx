@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { doc, getDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Center, Loader, Text, Stack } from '@mantine/core';
@@ -31,8 +31,9 @@ function detectSource(referrer) {
 }
 
 export default function AliasRedirectPage() {
-  const { alias }  = useParams();
-  const navigate   = useNavigate();
+  const { alias }        = useParams();
+  const navigate         = useNavigate();
+  const [searchParams]   = useSearchParams();
 
   useEffect(() => {
     if (!alias) { navigate('/', { replace: true }); return; }
@@ -43,7 +44,8 @@ export default function AliasRedirectPage() {
         if (!snap.exists()) { navigate('/404', { replace: true }); return; }
 
         const { listingId } = snap.data();
-        const source = detectSource(document.referrer);
+        // ?src=platform baked in by ShareModal takes precedence over referrer detection
+        const source = searchParams.get('src') || detectSource(document.referrer);
 
         // Fire-and-forget — don't block the redirect on this
         updateDoc(doc(db, 'shareLinks', alias), {
