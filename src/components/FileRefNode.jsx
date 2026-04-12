@@ -6,11 +6,11 @@ import React, { useState, lazy, Suspense } from "react";
 const FilePreviewModal = lazy(() => import("./FilePreviewModal.jsx"));
 
 // ── FileRefDisplay: real React component so it can hold modal state ───
-function FileRefDisplay({ fileName, fileUrl, privacy }) {
+function FileRefDisplay({ fileName, fileUrl, mimeType, privacy }) {
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const isLocked = privacy === "enroll" || privacy === "managers";
-  const file = fileUrl ? { name: fileName, url: fileUrl } : null;
+  const file = fileUrl ? { name: fileName, url: fileUrl, mimeType } : null;
 
   const containerStyle = {
     display: "inline-flex",
@@ -91,19 +91,21 @@ function GlobeIcon() {
 export class FileRefNode extends DecoratorNode {
   __fileName;
   __fileUrl;
+  __mimeType;
   __privacy;
 
-  constructor(fileName, fileUrl, privacy, key) {
+  constructor(fileName, fileUrl, mimeType, privacy, key) {
     super(key);
     this.__fileName = fileName || "File";
     this.__fileUrl  = fileUrl  || "";
+    this.__mimeType = mimeType || "";
     this.__privacy  = privacy  || "public";
   }
 
   static getType() { return "fileref"; }
 
   static clone(node) {
-    return new FileRefNode(node.__fileName, node.__fileUrl, node.__privacy, node.__key);
+    return new FileRefNode(node.__fileName, node.__fileUrl, node.__mimeType, node.__privacy, node.__key);
   }
 
   createDOM() {
@@ -117,25 +119,26 @@ export class FileRefNode extends DecoratorNode {
       <FileRefDisplay
         fileName={this.__fileName}
         fileUrl={this.__fileUrl}
+        mimeType={this.__mimeType}
         privacy={this.__privacy}
       />
     );
   }
 
   static importJSON(serialized) {
-    const { fileName, fileUrl, privacy } = serialized.data || {};
-    return new FileRefNode(fileName, fileUrl, privacy);
+    const { fileName, fileUrl, mimeType, privacy } = serialized.data || {};
+    return new FileRefNode(fileName, fileUrl, mimeType, privacy);
   }
 
   exportJSON() {
     return {
       type: "fileref",
       version: 1,
-      data: { fileName: this.__fileName, fileUrl: this.__fileUrl, privacy: this.__privacy },
+      data: { fileName: this.__fileName, fileUrl: this.__fileUrl, mimeType: this.__mimeType, privacy: this.__privacy },
     };
   }
 }
 
-export function $createFileRefNode(fileName, fileUrl, privacy) {
-  return new FileRefNode(fileName, fileUrl, privacy);
+export function $createFileRefNode(fileName, fileUrl, mimeType, privacy) {
+  return new FileRefNode(fileName, fileUrl, mimeType, privacy);
 }
