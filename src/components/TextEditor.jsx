@@ -5,18 +5,41 @@ import { ContentEditable } from "@lexical/react/LexicalContentEditable";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { ListPlugin } from "@lexical/react/LexicalListPlugin";
 import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
+import { AutoLinkPlugin } from "@lexical/react/LexicalAutoLinkPlugin";
+import { MarkdownShortcutPlugin } from "@lexical/react/LexicalMarkdownShortcutPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { ListNode, ListItemNode } from "@lexical/list";
-import { LinkNode } from "@lexical/link";
+import { LinkNode, AutoLinkNode } from "@lexical/link";
+import { HEADING, UNORDERED_LIST, ORDERED_LIST, QUOTE } from "@lexical/markdown";
+
+const LIST_TRANSFORMERS = [HEADING, UNORDERED_LIST, ORDERED_LIST, QUOTE];
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ImageNode } from "./ImageNode.jsx";
 import { ButtonNode } from "./ButtonNode.jsx";
 import { FileRefNode } from "./FileRefNode.jsx";
 import TextEditorToolbar from "./TextEditorToolbar.jsx";
+import { ListingFilesContext, EditorModeContext } from "./EditorContext.js";
 
 // Defined at module level so the array reference is stable across renders and HMR cycles
-const EDITOR_NODES = [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, ImageNode, ButtonNode, FileRefNode];
+// URL and email matchers for AutoLinkPlugin
+const URL_MATCHER = /((https?:\/\/(www\.)?)|(www\.))[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/;
+const EMAIL_MATCHER = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+const AUTO_LINK_MATCHERS = [
+  (text) => {
+    const match = URL_MATCHER.exec(text);
+    if (!match) return null;
+    const url = match[0];
+    return { index: match.index, length: url.length, text: url, url: url.startsWith("http") ? url : `https://${url}` };
+  },
+  (text) => {
+    const match = EMAIL_MATCHER.exec(text);
+    if (!match) return null;
+    return { index: match.index, length: match[0].length, text: match[0], url: `mailto:${match[0]}` };
+  },
+];
+
+const EDITOR_NODES = [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, AutoLinkNode, ImageNode, ButtonNode, FileRefNode];
 
 /**
  * Props:
@@ -36,6 +59,8 @@ export default function TextEditor({ initialState = "", onChange, listingFiles =
   };
 
   return (
+    <EditorModeContext.Provider value={true}>
+    <ListingFilesContext.Provider value={listingFiles}>
     <div className="text-editor">
       <LexicalComposer initialConfig={editorConfig}>
         <EditorInitializer initialState={initialState} editorRef={editorRef} />
@@ -49,10 +74,14 @@ export default function TextEditor({ initialState = "", onChange, listingFiles =
           <HistoryPlugin />
           <ListPlugin />
           <LinkPlugin />
+          <AutoLinkPlugin matchers={AUTO_LINK_MATCHERS} />
+          <MarkdownShortcutPlugin transformers={LIST_TRANSFORMERS} />
           <ChangeListener editorRef={editorRef} onChange={onChange} />
         </div>
       </LexicalComposer>
     </div>
+    </ListingFilesContext.Provider>
+    </EditorModeContext.Provider>
   );
 }
 

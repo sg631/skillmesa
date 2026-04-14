@@ -117,13 +117,22 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
 
-      // Users fully manage their own document.
-      allow write: if signedIn() && uid() == userId;
+      // Users can create and delete their own document (signup / account removal).
+      allow create, delete: if signedIn() && uid() == userId;
+
+      // Users can update their own document, but cannot set or change platformRole.
+      allow update: if signedIn() && uid() == userId
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['platformRole']);
 
       // Group admins updating another user's groupIds array (member add/remove).
       allow update: if signedIn()
         && request.resource.data.diff(resource.data).affectedKeys()
              .hasOnly(['groupIds']);
+
+      // Platform admins can assign/change platformRole on any user document.
+      allow update: if signedIn()
+        && get(/databases/$(database)/documents/users/$(uid())).data.get('platformRole', null) == 'admin'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['platformRole']);
     }
 
     // ── Chats ─────────────────────────────────────────────────────────────────

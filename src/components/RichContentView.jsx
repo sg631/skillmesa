@@ -7,14 +7,14 @@ import { LinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import { LexicalErrorBoundary } from "@lexical/react/LexicalErrorBoundary";
 import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { ListNode, ListItemNode } from "@lexical/list";
-import { LinkNode } from "@lexical/link";
+import { LinkNode, AutoLinkNode } from "@lexical/link";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { ImageNode } from "./ImageNode.jsx";
 import { ButtonNode } from "./ButtonNode.jsx";
 import { FileRefNode } from "./FileRefNode.jsx";
 
 // Defined at module level so the array reference is stable across renders and HMR cycles
-const VIEWER_NODES = [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, ImageNode, ButtonNode, FileRefNode];
+const VIEWER_NODES = [ListNode, ListItemNode, HeadingNode, QuoteNode, LinkNode, AutoLinkNode, ImageNode, ButtonNode, FileRefNode];
 
 function StateLoader({ content }) {
   const [editor] = useLexicalComposerContext();

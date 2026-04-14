@@ -5,6 +5,7 @@ import { collection, doc, getDoc } from "firebase/firestore";
 import { Link } from "react-router-dom";
 import { Card, Image, Text, Badge, Group, Stack, Avatar, Button, Box } from "@mantine/core";
 import StarRating from "./StarRating";
+import PlatformRoleBadge from "./PlatformRoleBadge";
 
 const bannerBase = {
   flex: 1,
@@ -36,6 +37,7 @@ function ListingComponent({ id }) {
   const [rating, setRating]             = useState(null);
   const [reviewCount, setReviewCount]   = useState(0);
   const [enrollmentCount, setEnrollmentCount] = useState(0);
+  const [ownerPlatformRole, setOwnerPlatformRole] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setCurrentUser(u));
@@ -81,6 +83,7 @@ function ListingComponent({ id }) {
           const d = snap.data();
           setOwnerName(d.displayName || "Unnamed User");
           setProfilePicUrl(d.profilePic?.currentUrl || "");
+          setOwnerPlatformRole(d.platformRole || null);
         } else {
           setOwnerName("Unknown User");
         }
@@ -207,6 +210,7 @@ function ListingComponent({ id }) {
           >
             <Avatar src={profilePicUrl || null} size={24} radius="xl" />
             <Text size="xs" c="dimmed" truncate>{ownerName}</Text>
+            <PlatformRoleBadge role={ownerPlatformRole} />
           </Group>
 
           {isEditor && (
