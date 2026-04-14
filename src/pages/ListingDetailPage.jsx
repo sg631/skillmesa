@@ -11,6 +11,7 @@ import {
 import { ArrowLeft, Share2, Mail, MessageSquare, ChevronDown, Eye, Users } from "lucide-react";
 import RichContentView from "../components/RichContentView";
 import ShareModal from "../components/ShareModal";
+import PlatformRoleBadge from "../components/PlatformRoleBadge";
 import ListingFeedback from "../components/ListingFeedback";
 import ListingFiles from "../components/ListingFiles";
 
@@ -369,9 +370,12 @@ function ListingDetailPage() {
                 onClick={() => (window.location = "/profile/" + listingData.owner)}
               >
                 <Avatar src={profilePicUrl} size={32} radius="xl" />
-                <Stack gap={0}>
+                <Stack gap={2}>
                   <Text size="xs" c="dimmed">Offered by</Text>
-                  <Text size="sm" fw={500}>{ownerName}</Text>
+                  <Group gap={6} align="center">
+                    <Text size="sm" fw={500}>{ownerName}</Text>
+                    <PlatformRoleBadge role={ownerData?.platformRole} />
+                  </Group>
                 </Stack>
               </Group>
 

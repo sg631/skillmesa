@@ -26,12 +26,18 @@
   transform: translateY(-200px);
 }
 
+/* Links in Lexical content — readable in both modes */
 a:has(span[data-lexical-text=true]) {
-  color: var(--accent-hex);
+  color: var(--mantine-color-cyan-8);
 }
-a:has(span[data-lexical-text=true]):hover::before {
-  color: rgba(var(--accent-rgb), 0.7);
+[data-mantine-color-scheme="dark"] a:has(span[data-lexical-text=true]) {
+  color: var(--mantine-color-cyan-4);
+}
+
+/* CTRL+click hint — edit mode only (inside .editor-container, never in RichContentView) */
+.editor-container a:has(span[data-lexical-text=true]):hover::before {
   content: "(CTRL+Click to open link) ";
+  color: var(--mantine-color-dimmed);
   white-space: nowrap;
   font-style: italic;
   position: absolute;

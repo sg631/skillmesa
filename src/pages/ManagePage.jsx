@@ -589,10 +589,10 @@ function ManagePage() {
                 <Tabs.Tab value="files">Files</Tabs.Tab>
                 <Tabs.Tab value="resources">Resources</Tabs.Tab>
                 <Tabs.Tab value="image-editor" disabled>
-                  <Text size="xs" c="dimmed">Image Editor <Badge size="xs" variant="light" color="gray" ml={4}>Soon</Badge></Text>
+                  <Text size="xs" c="dimmed" component="span">Image Editor <Badge size="xs" variant="light" color="gray" ml={4}>Soon</Badge></Text>
                 </Tabs.Tab>
                 <Tabs.Tab value="ai" disabled>
-                  <Text size="xs" c="dimmed">AI <Badge size="xs" variant="light" color="gray" ml={4}>Soon</Badge></Text>
+                  <Text size="xs" c="dimmed" component="span">AI <Badge size="xs" variant="light" color="gray" ml={4}>Soon</Badge></Text>
                 </Tabs.Tab>
               </Tabs.List>
 

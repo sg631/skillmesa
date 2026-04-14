@@ -6,6 +6,7 @@ import { db } from "../firebase";
 import { LinkButton } from "../components/LinkElements.jsx";
 import ListingsPanel from '../components/ListingsPanel.jsx';
 import { Title, Text, Stack, Avatar, Code, Badge, Group, Loader } from "@mantine/core";
+import PlatformRoleBadge from '../components/PlatformRoleBadge.jsx';
 
 const listingsCollection = collection(db, "listings");
 const listingsByOwnerQuery = (ownerUID) => query(listingsCollection, where("owner", "==", ownerUID));
@@ -78,7 +79,10 @@ function ProfilePage() {
 
   return (
     <Stack align="center" gap="md" py="xl">
-      <Title order={1}>{displayName}</Title>
+      <Group gap="xs" align="center" justify="center">
+        <Title order={1}>{displayName}</Title>
+        <PlatformRoleBadge role={profileData.platformRole} size="sm" />
+      </Group>
 
       <Text size="sm" c="dimmed">You may know them as</Text>
       <Group gap="xs" align="center">

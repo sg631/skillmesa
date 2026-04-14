@@ -84,6 +84,17 @@ export const onListingCreated = onDocumentCreated(
   }
 );
 
+// Fields that are updated in-place without needing to re-fetch owner data.
+// A change to ONLY these fields triggers a partial Algolia update, not a full rebuild.
+const STATS_ONLY_FIELDS = new Set([
+  "rating", "reviewCount", "viewCount", "shares", "sources", "enrollmentCount",
+]);
+
+function changedKeys(before, after) {
+  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+  return [...keys].filter(k => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+}
+
 // Sync updated listings to Algolia — handle archive/unarchive transitions
 export const onListingUpdated = onDocumentUpdated(
   { document: "listings/{listingId}", secrets: [algoliaAdminKey] },
@@ -117,7 +128,19 @@ export const onListingUpdated = onDocumentUpdated(
       return;
     }
 
-    // Normal update — sync the record
+    const changed = changedKeys(before, after);
+
+    // Stats-only update (rating, viewCount, shares, etc.) — partial update, no owner re-fetch.
+    // This prevents overwriting ownerDisplayName with "Unknown" if the user doc is unavailable.
+    if (changed.length > 0 && changed.every(k => STATS_ONLY_FIELDS.has(k))) {
+      const partial = { objectID: docId };
+      for (const k of changed) partial[k] = after[k] ?? null;
+      await client.partialUpdateObjects({ indexName: ALGOLIA_INDEX, objects: [partial] });
+      console.log(`Partial stats update for listing ${docId} in Algolia (${changed.join(", ")})`);
+      return;
+    }
+
+    // Full rebuild for all other updates
     const ownerData = await fetchOwnerData(after.owner);
     const record = buildAlgoliaRecord(docId, after, ownerData);
     await client.saveObject({ indexName: ALGOLIA_INDEX, body: record });
