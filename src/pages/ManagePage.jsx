@@ -307,6 +307,25 @@ function ManagePage() {
   const handleDelete = async () => {
     setDeleting(true);
     try {
+      // Delete enrollments subcollection (orphaned docs show up on HomePage via collectionGroup)
+      const enrollSnap = await getDocs(collection(db, 'listings', listingId, 'enrollments'));
+      const enrollDeletes = enrollSnap.docs.map(d => deleteDoc(d.ref));
+
+      // Delete lockedPage subcollection
+      const lockedDelete = deleteDoc(doc(db, 'listings', listingId, 'lockedPage', 'main')).catch(() => {});
+
+      // Delete top-level shareLinks docs for this listing
+      const shareSnap = await getDocs(query(collection(db, 'shareLinks'), where('listingId', '==', listingId)));
+      const shareDeletes = shareSnap.docs.map(d => deleteDoc(d.ref));
+
+      // Remove from group's listingIds array if group-owned
+      const groupUpdate = listingData.ownerGroupId
+        ? updateDoc(doc(db, 'groups', listingData.ownerGroupId), { listingIds: arrayRemove(listingId) }).catch(() => {})
+        : Promise.resolve();
+
+      await Promise.all([...enrollDeletes, lockedDelete, ...shareDeletes, groupUpdate]);
+
+      // Delete listing doc — Algolia cleanup handled by onListingDeleted Cloud Function
       await deleteDoc(doc(db, "listings", listingId));
       navigate("/home");
     } catch (err) {
