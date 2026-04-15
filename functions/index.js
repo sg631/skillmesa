@@ -22,7 +22,7 @@ async function fetchOwnerData(ownerUid) {
   if (!userSnap.exists) return { ownerDisplayName: "", ownerProfilePicUrl: "" };
   const userData = userSnap.data();
   return {
-    ownerDisplayName: userData.displayName || userData.fullname || "",
+    ownerDisplayName: userData.displayName || userData.fullname || userData.username || "",
     ownerProfilePicUrl: userData.profilePic?.currentUrl || userData.profilePic?.svgDataUrl || "",
   };
 }

@@ -42,7 +42,7 @@ async function fetchOwnerData(ownerUid) {
   }
   const userData = userSnap.data();
   return {
-    ownerDisplayName: userData.displayName || userData.fullname || "",
+    ownerDisplayName: userData.displayName || userData.fullname || userData.username || "",
     ownerProfilePicUrl: userData.profilePic?.currentUrl || userData.profilePic?.svgDataUrl || "",
   };
 }

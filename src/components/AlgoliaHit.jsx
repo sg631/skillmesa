@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import { Highlight } from "react-instantsearch";
 import { Link } from "react-router-dom";
 import { Card, Image, Text, Badge, Group, Stack, Avatar, Button, Box } from "@mantine/core";
@@ -18,11 +19,25 @@ const bannerBase = {
 
 function AlgoliaHit({ hit }) {
   const [currentUser, setCurrentUser] = useState(null);
+  const [ownerName, setOwnerName] = useState(hit.ownerDisplayName || "");
+  const [ownerPic, setOwnerPic]   = useState(hit.ownerProfilePicUrl || null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => setCurrentUser(u));
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!hit.ownerDisplayName && hit.owner) {
+      getDoc(doc(db, "users", hit.owner)).then((snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          setOwnerName(d.displayName || d.fullname || d.username || "Unknown");
+          setOwnerPic(d.profilePic?.currentUrl || d.profilePic?.svgDataUrl || null);
+        }
+      }).catch(() => {});
+    }
+  }, [hit.objectID]);
 
   const isOwner = Boolean(currentUser && hit.owner && currentUser.uid === hit.owner);
   const tags   = hit.tags || [];
@@ -115,9 +130,9 @@ function AlgoliaHit({ hit }) {
             style={{ cursor: "pointer" }}
             onClick={() => (window.location = "/profile/" + hit.owner)}
           >
-            <Avatar src={hit.ownerProfilePicUrl || null} size={24} radius="xl" />
+            <Avatar src={ownerPic} size={24} radius="xl" />
             <Text size="xs" c="dimmed" truncate>
-              {hit.ownerDisplayName || "Unknown"}
+              {ownerName || "Unknown"}
             </Text>
           </Group>
 
