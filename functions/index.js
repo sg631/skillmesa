@@ -37,7 +37,7 @@ function buildAlgoliaRecord(docId, data, ownerData) {
     ownerGroupId: data.ownerGroupId || null,
     ownerDisplayName: ownerData.ownerDisplayName,
     ownerProfilePicUrl: ownerData.ownerProfilePicUrl,
-    rating:      data.rating ?? null,
+    rating:      (data.rating != null && data.rating >= 0) ? data.rating : null,
     reviewCount: data.reviewCount ?? 0,
     tags: data.tags || [],
     category: data.category || "",
@@ -83,18 +83,6 @@ export const onListingCreated = onDocumentCreated(
   }
 );
 
-// Fields whose change requires a full Algolia record rebuild.
-// If NONE of these changed, we do a cheaper partial update instead.
-const STRUCTURAL_FIELDS = [
-  "title", "description", "owner", "ownerType", "ownerGroupId",
-  "type", "online", "category", "tags", "price", "zipCode",
-  "thumbnailURL", "archived", "location", "editors",
-];
-
-function structuralFieldChanged(before, after) {
-  return STRUCTURAL_FIELDS.some(k => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
-}
-
 // Sync updated listings to Algolia — handle archive/unarchive transitions
 export const onListingUpdated = onDocumentUpdated(
   { document: "listings/{listingId}", secrets: [algoliaAdminKey] },
@@ -114,39 +102,12 @@ export const onListingUpdated = onDocumentUpdated(
       return;
     }
 
-    if (wasArchived && !isArchived) {
-      // Listing was just unarchived — re-add to search index
-      const ownerData = await fetchOwnerData(after.owner);
-      const record = buildAlgoliaRecord(docId, after, ownerData);
-      await client.saveObject({ indexName: ALGOLIA_INDEX, body: record });
-      console.log(`Re-indexed unarchived listing ${docId} in Algolia`);
-      return;
-    }
-
     if (isArchived) {
-      // Still archived, no index update needed
+      // Still archived (or just re-archived), no index update needed
       return;
     }
 
-    // If no structural field changed (only stats like rating/viewCount/shares),
-    // do a targeted partial update instead of a full rebuild.
-    // This prevents any risk of overwriting ownerDisplayName during routine stat updates.
-    if (!structuralFieldChanged(before, after)) {
-      const partial = {
-        objectID: docId,
-        rating:          after.rating          ?? null,
-        reviewCount:     after.reviewCount      ?? 0,
-        viewCount:       after.viewCount        ?? 0,
-        shares:          after.shares           ?? 0,
-        sources:         after.sources          ?? {},
-        enrollmentCount: after.enrollmentCount  ?? 0,
-      };
-      await client.partialUpdateObjects({ indexName: ALGOLIA_INDEX, objects: [partial] });
-      console.log(`Partial stats update for listing ${docId} in Algolia`);
-      return;
-    }
-
-    // Full rebuild for structural changes
+    // Full rebuild for all changes — keeps ownerDisplayName correct on every write
     const ownerData = await fetchOwnerData(after.owner);
     const record = buildAlgoliaRecord(docId, after, ownerData);
     await client.saveObject({ indexName: ALGOLIA_INDEX, body: record });
