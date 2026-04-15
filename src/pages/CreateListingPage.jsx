@@ -112,7 +112,6 @@ function CreateListingPage() {
         title:       title.trim(),
         description: description.trim(),
         owner:       user.uid,
-        rating:      -1,
         tags:        tagsArray,
         category,
         type,

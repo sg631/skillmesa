@@ -37,7 +37,7 @@ function buildAlgoliaRecord(docId, data, ownerData) {
     ownerGroupId: data.ownerGroupId || null,
     ownerDisplayName: ownerData.ownerDisplayName,
     ownerProfilePicUrl: ownerData.ownerProfilePicUrl,
-    rating:      data.rating ?? null,
+    rating:      (data.rating != null && data.rating >= 0) ? data.rating : null,
     reviewCount: data.reviewCount ?? 0,
     tags: data.tags || [],
     category: data.category || "",
@@ -134,7 +134,7 @@ export const onListingUpdated = onDocumentUpdated(
     if (!structuralFieldChanged(before, after)) {
       const partial = {
         objectID: docId,
-        rating:          after.rating          ?? null,
+        rating:          (after.rating != null && after.rating >= 0) ? after.rating : null,
         reviewCount:     after.reviewCount      ?? 0,
         viewCount:       after.viewCount        ?? 0,
         shares:          after.shares           ?? 0,

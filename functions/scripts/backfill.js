@@ -57,7 +57,7 @@ function buildAlgoliaRecord(docId, data, ownerData) {
     ownerGroupId: data.ownerGroupId || null,
     ownerDisplayName: ownerData.ownerDisplayName,
     ownerProfilePicUrl: ownerData.ownerProfilePicUrl,
-    rating:      data.rating ?? null,
+    rating:      (data.rating != null && data.rating >= 0) ? data.rating : null,
     reviewCount: data.reviewCount ?? 0,
     tags: data.tags || [],
     category: data.category || "",
