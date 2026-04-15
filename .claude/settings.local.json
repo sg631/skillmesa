@@ -10,7 +10,9 @@
       "Bash(node:*)",
       "Bash(firebase deploy:*)",
       "Bash(xargs grep:*)",
-      "Bash(grep \\\\$createNodeSelection\\\\|\\\\$isNodeSelection\\\\|\\\\$createLinkNode:*)"
+      "Bash(grep \\\\$createNodeSelection\\\\|\\\\$isNodeSelection\\\\|\\\\$createLinkNode:*)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
     ]
   }
 }
