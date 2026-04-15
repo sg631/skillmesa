@@ -10,8 +10,12 @@
     "backfill": "node scripts/backfill.js"
   },
   "dependencies": {
+    "add": "^2.0.6",
     "algoliasearch": "^5.47.0",
+    "commit": "^0.0.4",
     "firebase-admin": "^13.0.0",
-    "firebase-functions": "^6.3.0"
+    "firebase-functions": "^6.3.0",
+    "git": "^0.1.5",
+    "package-lock.json": "^1.0.0"
   }
 }
