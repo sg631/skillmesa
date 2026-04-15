@@ -17,13 +17,12 @@ function getAlgoliaClient() {
 }
 
 async function fetchOwnerData(ownerUid) {
+  if (!ownerUid) return { ownerDisplayName: "", ownerProfilePicUrl: "" };
   const userSnap = await db.collection("users").doc(ownerUid).get();
-  if (!userSnap.exists) {
-    return { ownerDisplayName: "Unknown", ownerProfilePicUrl: "" };
-  }
+  if (!userSnap.exists) return { ownerDisplayName: "", ownerProfilePicUrl: "" };
   const userData = userSnap.data();
   return {
-    ownerDisplayName: userData.displayName || userData.fullname || "Unknown",
+    ownerDisplayName: userData.displayName || userData.fullname || "",
     ownerProfilePicUrl: userData.profilePic?.currentUrl || userData.profilePic?.svgDataUrl || "",
   };
 }
@@ -84,15 +83,16 @@ export const onListingCreated = onDocumentCreated(
   }
 );
 
-// Fields that are updated in-place without needing to re-fetch owner data.
-// A change to ONLY these fields triggers a partial Algolia update, not a full rebuild.
-const STATS_ONLY_FIELDS = new Set([
-  "rating", "reviewCount", "viewCount", "shares", "sources", "enrollmentCount",
-]);
+// Fields whose change requires a full Algolia record rebuild.
+// If NONE of these changed, we do a cheaper partial update instead.
+const STRUCTURAL_FIELDS = [
+  "title", "description", "owner", "ownerType", "ownerGroupId",
+  "type", "online", "category", "tags", "price", "zipCode",
+  "thumbnailURL", "archived", "location", "editors",
+];
 
-function changedKeys(before, after) {
-  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
-  return [...keys].filter(k => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
+function structuralFieldChanged(before, after) {
+  return STRUCTURAL_FIELDS.some(k => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
 }
 
 // Sync updated listings to Algolia — handle archive/unarchive transitions
@@ -128,19 +128,25 @@ export const onListingUpdated = onDocumentUpdated(
       return;
     }
 
-    const changed = changedKeys(before, after);
-
-    // Stats-only update (rating, viewCount, shares, etc.) — partial update, no owner re-fetch.
-    // This prevents overwriting ownerDisplayName with "Unknown" if the user doc is unavailable.
-    if (changed.length > 0 && changed.every(k => STATS_ONLY_FIELDS.has(k))) {
-      const partial = { objectID: docId };
-      for (const k of changed) partial[k] = after[k] ?? null;
+    // If no structural field changed (only stats like rating/viewCount/shares),
+    // do a targeted partial update instead of a full rebuild.
+    // This prevents any risk of overwriting ownerDisplayName during routine stat updates.
+    if (!structuralFieldChanged(before, after)) {
+      const partial = {
+        objectID: docId,
+        rating:          after.rating          ?? null,
+        reviewCount:     after.reviewCount      ?? 0,
+        viewCount:       after.viewCount        ?? 0,
+        shares:          after.shares           ?? 0,
+        sources:         after.sources          ?? {},
+        enrollmentCount: after.enrollmentCount  ?? 0,
+      };
       await client.partialUpdateObjects({ indexName: ALGOLIA_INDEX, objects: [partial] });
-      console.log(`Partial stats update for listing ${docId} in Algolia (${changed.join(", ")})`);
+      console.log(`Partial stats update for listing ${docId} in Algolia`);
       return;
     }
 
-    // Full rebuild for all other updates
+    // Full rebuild for structural changes
     const ownerData = await fetchOwnerData(after.owner);
     const record = buildAlgoliaRecord(docId, after, ownerData);
     await client.saveObject({ indexName: ALGOLIA_INDEX, body: record });

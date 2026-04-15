@@ -34,13 +34,15 @@ const db = getFirestore();
 const algolia = algoliasearch(ALGOLIA_APP_ID, algoliaAdminKey);
 
 async function fetchOwnerData(ownerUid) {
+  if (!ownerUid) return { ownerDisplayName: "", ownerProfilePicUrl: "" };
   const userSnap = await db.collection("users").doc(ownerUid).get();
   if (!userSnap.exists) {
-    return { ownerDisplayName: "Unknown", ownerProfilePicUrl: "" };
+    console.warn(`  Warning: user doc not found for uid ${ownerUid}`);
+    return { ownerDisplayName: "", ownerProfilePicUrl: "" };
   }
   const userData = userSnap.data();
   return {
-    ownerDisplayName: userData.displayName || userData.fullname || "Unknown",
+    ownerDisplayName: userData.displayName || userData.fullname || "",
     ownerProfilePicUrl: userData.profilePic?.currentUrl || userData.profilePic?.svgDataUrl || "",
   };
 }
